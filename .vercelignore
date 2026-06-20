@@ -1,0 +1,10 @@
+node_modules
+.git
+.next
+*.log
+tmp
+outputs
+graphify-out
+infra
+scripts
+sentinel-v5

@@ -1,0 +1,359 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Tricognita — Matcha / Botanical Cyber design system
+   Deep forest greens, crisp matcha accents, stone slate neutrals.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: dark;
+
+  /* ── Surfaces ──────────────────────────────────────────── */
+  --ink:        #0B0914;      /* deep dark purple/black */
+  --ink-deep:   #05040A;      /* below-surface void */
+  --moss:       #120F22;      /* primary surface */
+  --moss-rise:  #1A1533;      /* raised card */
+  --moss-hi:    #221C44;      /* hover/high surface */
+  --sage:       #2D2459;      /* border on light surfaces */
+  --sage-soft:  #1E183D;      /* border on dark surfaces */
+
+  /* ── Brand accent scale (Purple/Indigo) ───────────────────────────────── */
+  --matcha-50:  #F5F3FF;
+  --matcha-100: #EDE9FE;
+  --matcha-200: #DDD6FE;
+  --matcha-300: #C4B5FD;      /* Soft Lavender */
+  --matcha-400: #A78BFA;
+  --matcha-500: #8B5CF6;
+  --matcha-600: #7C3AED;      /* Primary Purple */
+  --matcha-700: #6D28D9;
+  --matcha-800: #5B21B6;
+  --matcha-900: #4C1D95;
+
+  /* ── Stone neutrals (slate tuned to warm green) ────────── */
+  --stone-50:   #F8F9FA;
+  --stone-200:  #E2E8F0;
+  --stone-300:  #CBD5E1;
+  --stone-400:  #94A3B8;
+  --stone-500:  #64748B;
+  --stone-600:  #475569;
+  --stone-700:  #334155;
+
+  /* ── Intents ───────────────────────────────────────────── */
+  --ember:      #F43F5E;      /* Rose */
+  --ember-glow: #FB7185;
+  --amber-clay: #F59E0B;      /* Amber */
+  --mist:       #38BDF8;      /* Sky */
+
+  /* ── Rhythm ────────────────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius:     12px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+
+  /* Restrained shadows — no brand glow on resting surfaces.
+     --shadow-soft is the default for every Card (neutral depth);
+     --shadow-glow is reserved for interactive emphasis (focus/hover on
+     KPI tiles, primary CTAs) and uses brand accent at lowered saturation. */
+  --shadow-soft: 0 1px 0 rgba(255,255,255,0.02) inset,
+                 0 12px 32px -20px rgba(0,0,0,0.55);
+  --shadow-glow: 0 0 0 1px rgba(124,58,237,0.16),
+                 0 8px 22px -10px rgba(124,58,237,0.12);
+
+  /* ── Background aliases ───────────────────────────────── */
+  --background: var(--ink);
+  --foreground: var(--stone-50);
+
+  /* ── Typography ────────────────────────────────────────── */
+  --font-serif:  var(--font-fraunces), ui-serif, Georgia, serif;
+  /* next/font sets --font-geist-sans / --font-geist-mono in layout.tsx */
+  --font-sans:   var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:   var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-ink:        var(--ink);
+  --color-ink-deep:   var(--ink-deep);
+  --color-moss:       var(--moss);
+  --color-moss-rise:  var(--moss-rise);
+  --color-moss-hi:    var(--moss-hi);
+  --color-sage:       var(--sage);
+  --color-sage-soft:  var(--sage-soft);
+
+  --color-matcha-50:  var(--matcha-50);
+  --color-matcha-100: var(--matcha-100);
+  --color-matcha-200: var(--matcha-200);
+  --color-matcha-300: var(--matcha-300);
+  --color-matcha-400: var(--matcha-400);
+  --color-matcha-500: var(--matcha-500);
+  --color-matcha-600: var(--matcha-600);
+  --color-matcha-700: var(--matcha-700);
+  --color-matcha-800: var(--matcha-800);
+  --color-matcha-900: var(--matcha-900);
+
+  --color-stone-50:   var(--stone-50);
+  --color-stone-200:  var(--stone-200);
+  --color-stone-300:  var(--stone-300);
+  --color-stone-400:  var(--stone-400);
+  --color-stone-500:  var(--stone-500);
+
+  --color-ember:      var(--ember);
+  --color-amber-clay: var(--amber-clay);
+  --color-mist:       var(--mist);
+
+  --font-serif:       var(--font-serif);
+  --font-sans:        var(--font-sans);
+  --font-mono:        var(--font-mono);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Body — gradient mesh + grain texture
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+html, body {
+  background: var(--ink);
+  color: var(--stone-50);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+
+body {
+  background-color: var(--ink);
+  /* Subtle brand-tinted mesh — opacity reduced ~40% vs prior prototype tones
+     so charts/data carry the eye, not the background. */
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(124,58,237,0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 95% 20%, rgba(139,92,246,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 60% at 50% 115%, rgba(76,29,149,0.09) 0%, transparent 60%);
+  background-attachment: fixed;
+  position: relative;
+}
+
+/* Film grain — SVG noise at overlay blend */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.72  0 0 0 0 0.84  0 0 0 0 0.58  0 0 0 0.7 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+}
+
+body > * { position: relative; z-index: 2; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Custom cursors
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.cursor-leaf {
+  cursor: auto;
+}
+.cursor-dot {
+  /* Default pointer — custom cursor removed as part of the enterprise pass
+     (custom cursors read as gimmicky in SOC tooling and break some screen
+     readers' click affordance). Keep the class for backward compat. */
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Primitives
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.serif         { font-family: var(--font-serif); font-optical-sizing: auto; font-variation-settings: "opsz" 144, "SOFT" 50;  letter-spacing: -0.015em; }
+.serif-display { font-family: var(--font-serif); font-optical-sizing: auto; font-variation-settings: "opsz" 144, "SOFT" 100; letter-spacing: -0.032em; }
+.eyebrow       { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; color: var(--matcha-300); }
+
+/* Glass panel with matcha rim-light (tactile on hover) */
+.glass {
+  background:
+    linear-gradient(145deg, rgba(30,24,61,0.55) 0%, rgba(18,15,34,0.35) 100%);
+  border: 1px solid var(--sage-soft);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  box-shadow: var(--shadow-soft);
+  transition: border-color .35s cubic-bezier(.4,0,.2,1),
+              box-shadow .45s cubic-bezier(.4,0,.2,1),
+              transform .45s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  /* Hover rim-light at half the prior saturation. */
+  background: linear-gradient(160deg, rgba(139,92,246,0.18), rgba(139,92,246,0) 40%, rgba(124,58,237,0) 70%, rgba(139,92,246,0.10));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity .4s ease;
+  pointer-events: none;
+}
+.glass:hover {
+  border-color: rgba(139,92,246,0.20);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+.glass:hover::after { opacity: 1; }
+
+/* Primary button */
+.btn-matcha {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 22px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  background: var(--matcha-600);
+  border: 1px solid var(--matcha-500);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12),
+              0 1px 0 rgba(0,0,0,0.18),
+              0 6px 16px -8px rgba(124,58,237,0.35);
+  transition: transform .22s ease, box-shadow .3s ease, filter .3s ease;
+}
+.btn-matcha:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18),
+              0 1px 0 rgba(0,0,0,0.18),
+              0 10px 22px -8px rgba(124,58,237,0.45);
+}
+.btn-matcha:active { transform: translateY(0) scale(.995); }
+
+/* Ghost button */
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 13px 22px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--stone-50);
+  background: rgba(30,24,61,0.4);
+  border: 1px solid var(--sage);
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  transition: border-color .25s ease, background .25s ease, color .25s ease;
+}
+.btn-ghost:hover {
+  border-color: var(--matcha-500);
+  background: rgba(30,24,61,0.8);
+  color: var(--matcha-100);
+}
+
+/* Link with underline-draw */
+.link-draw {
+  position: relative;
+  color: var(--stone-50);
+  transition: color .25s ease;
+}
+.link-draw::after {
+  content: "";
+  position: absolute; left: 0; bottom: -3px;
+  width: 100%; height: 1px;
+  background: var(--matcha-400);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .45s cubic-bezier(.4,0,.2,1);
+}
+.link-draw:hover { color: var(--matcha-200); }
+.link-draw:hover::after { transform: scaleX(1); }
+
+/* Dot-lattice (cyber topography) */
+.lattice {
+  background-image: radial-gradient(circle at 1px 1px, rgba(139,92,246,0.07) 1px, transparent 0);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%);
+}
+
+/* Hero gradient text */
+.text-leaf {
+  background: linear-gradient(120deg, var(--matcha-100) 0%, var(--matcha-300) 45%, var(--matcha-500) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Sprig divider */
+.sprig {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--matcha-400);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+.sprig::before, .sprig::after {
+  content: ""; width: 40px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--matcha-600), transparent);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--sage); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--matcha-600); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Legacy — keep old glass classes alive so dashboard pages don't break
+   until a full migration. Soft-remap to the new botanical palette.
+   ══════════════════════════════════════════════════════════════════════════════ */
+.glass-panel,
+.glass-panel-neon {
+  background: linear-gradient(145deg, rgba(26,48,39,0.55) 0%, rgba(15,28,23,0.35) 100%);
+  border: 1px solid var(--sage-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition: border-color .3s cubic-bezier(.4,0,.2,1), box-shadow .3s, transform .3s;
+}
+.glass-panel:hover, .glass-panel-neon:hover {
+  border-color: rgba(183,214,149,0.22);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(120deg, var(--matcha-100), var(--matcha-400));
+}
+
+.cyber-grid {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, rgba(183,214,149,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(183,214,149,0.04) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+}
+
+/* CSS-only staggered reveal (for non-Framer sections) */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); filter: blur(2px); }
+  to   { opacity: 1; transform: translateY(0);   filter: blur(0); }
+}
+.rise-in   { animation: rise-in .8s cubic-bezier(.22,1,.36,1) both; }
+.rise-in-2 { animation: rise-in .8s cubic-bezier(.22,1,.36,1) both .08s; }
+.rise-in-3 { animation: rise-in .8s cubic-bezier(.22,1,.36,1) both .16s; }
+.rise-in-4 { animation: rise-in .8s cubic-bezier(.22,1,.36,1) both .24s; }
+.rise-in-5 { animation: rise-in .8s cubic-bezier(.22,1,.36,1) both .32s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .rise-in-2, .rise-in-3, .rise-in-4, .rise-in-5 { animation: none; }
+  * { transition-duration: .01s !important; animation-duration: .01s !important; }
+}

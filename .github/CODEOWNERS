@@ -1,0 +1,35 @@
+# CODEOWNERS — tricognita/tricognita-frontend
+# Paths are relative to the repo root (this repo == the frontend app).
+# Founder is required reviewer everywhere; security-critical paths are listed
+# explicitly so they can never be merged without founder review even after
+# trusted reviewers are added.
+#
+# To delegate safe zones later, add a second owner ONLY on non-security paths:
+#   /lib/ui/**   @NITHISH282620 @tricognita/frontend-reviewers
+
+# Default: founder reviews everything
+*                       @NITHISH282620
+
+# ── Security-critical (founder MUST review) ──
+/middleware.ts          @NITHISH282620
+/lib/auth.ts            @NITHISH282620
+/lib/jit-token.ts       @NITHISH282620
+/lib/jit-secret.ts      @NITHISH282620
+/lib/token-store.ts     @NITHISH282620
+/lib/rbac.ts            @NITHISH282620
+/lib/role-utils.ts      @NITHISH282620
+/lib/rate-limit.ts      @NITHISH282620
+/lib/users.ts           @NITHISH282620
+
+# ── BFF / server-side routes ──
+/app/api/**             @NITHISH282620
+
+# ── Build, deploy, supply chain ──
+/package.json           @NITHISH282620
+/package-lock.json      @NITHISH282620
+/next.config.*          @NITHISH282620
+/vercel.json            @NITHISH282620
+/Dockerfile             @NITHISH282620
+
+# ── CI/CD + governance ──
+/.github/**             @NITHISH282620

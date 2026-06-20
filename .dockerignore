@@ -1,0 +1,16 @@
+# Dependencies / build artifacts
+node_modules/
+.next/
+out/
+dist/
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Git / IDE
+.git/
+.gitignore
+**/.DS_Store
+*.log
