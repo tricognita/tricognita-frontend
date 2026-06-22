@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { FirstExperience, ExecutionProof, ConversionCTA } from "./components/ConversionSections";
+import { FirstExperience, ExecutionProof, ConversionCTA, StatsBar, Integrations, Testimonial } from "./components/ConversionSections";
 
 // ─── Static Data ─────────────────────────────────────────────────────────────
 
@@ -215,10 +215,10 @@ export default function HomePage() {
       </section>
 
       {/* ── Divider ── */}
-      <div className="border-t border-zinc-900" />
+      <StatsBar />
 
-      {/* ── FIX E: Safety strip ── */}
-      <div className="border-y border-zinc-900 bg-zinc-950/80">
+      {/* ── Safety strip ── */}
+      <div className="border-y border-[rgba(45,36,89,0.4)] bg-[rgba(8,6,16,0.5)] backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center gap-6 md:gap-10">
           {[
             { dot: "bg-emerald-500", text: "Policy-bound execution" },
@@ -227,7 +227,7 @@ export default function HomePage() {
             { dot: "bg-violet-500",  text: "Human JIT approval for prod changes" },
             { dot: "bg-cyan-500",    text: "Immutable audit trail" },
           ].map((s) => (
-            <span key={s.text} className="flex items-center gap-2 text-[11px] font-mono text-zinc-400">
+            <span key={s.text} className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
               {s.text}
             </span>
@@ -546,15 +546,16 @@ export default function HomePage() {
 
       <ExecutionProof />
 
-      <div className="border-t border-zinc-900" />
+      <div className="divider-glow mx-6 lg:mx-16" />
 
       {/* ── 5. FINOPS ── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">FINOPS INTEGRATION</p>
-        <h2 className="text-3xl font-bold text-white mb-2">Security posture meets cost architecture.</h2>
-        <p className="text-zinc-500 mb-12 text-sm">Insecure infrastructure is expensive infrastructure. Tricognita manages both from a single control plane.</p>
-
-        <div className="rounded border border-zinc-800 bg-zinc-950 font-mono text-xs p-6 space-y-3 max-w-3xl">
+        <div className="mb-12">
+          <p className="section-label mb-4">FinOps Integration</p>
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight">Security posture meets cost architecture.</h2>
+          <p className="text-zinc-500 text-sm">Insecure infrastructure is expensive infrastructure. Tricognita manages both from a single control plane.</p>
+        </div>
+        <div className="terminal font-mono text-xs p-6 space-y-4 max-w-3xl">
           {[
             { lvl: "RISK",    c: "text-rose-400",    msg: "Orphaned EBS volume (unencrypted) detected in us-east-1. Attached to terminated instance." },
             { lvl: "COST",    c: "text-amber-400",   msg: "Projected monthly cost: $4,200. Data classification: UNKNOWN. Compliance risk: HIGH." },
@@ -569,33 +570,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="border-t border-zinc-900" />
+      <div className="divider-glow mx-6 lg:mx-16" />
 
       {/* ── 6. SOVEREIGN INFRA ── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">SOVEREIGN INFRASTRUCTURE</p>
-        <h2 className="text-3xl font-bold text-white mb-2">Data sovereignty engineered for India & the UAE.</h2>
-        <p className="text-zinc-500 mb-12 text-sm">Your telemetry never leaves your region. Built from the ground up for the strictest localized compliance requirements.</p>
+        <div className="mb-12">
+          <p className="section-label mb-4">Sovereign Infrastructure</p>
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight">Data sovereignty engineered for India &amp; the UAE.</h2>
+          <p className="text-zinc-500 text-sm">Your telemetry never leaves your region. Built from the ground up for the strictest localized compliance requirements.</p>
+        </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {[
             { region: "India",         nodes: ["ap-south-1 (Mumbai)", "ap-south-2 (Hyderabad)"],  compliance: ["CERT-In Aligned", "RBI Cyber Framework", "DPDP Act Ready"] },
             { region: "UAE & Gulf",    nodes: ["me-central-1 (UAE)", "me-south-1 (Bahrain)"],      compliance: ["NESA IA Aligned", "DIFC Data Ready", "Central Bank UAE"] },
           ].map((r) => (
-            <div key={r.region} className="rounded border border-zinc-800 p-6 bg-zinc-950">
-              <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-4">{r.region}</p>
+            <div key={r.region} className="glow-card accent-top p-6 lift">
+              <p className="section-label mb-5">{r.region}</p>
               <div className="space-y-2 mb-5">
                 {r.nodes.map((n) => (
                   <div key={n} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="font-mono text-xs text-zinc-400">{n}</span>
-                    <span className="font-mono text-[10px] text-emerald-400 ml-auto">ACTIVE</span>
+                    <span className="font-mono text-[10px] text-emerald-400 stat-glow ml-auto">ACTIVE</span>
                   </div>
                 ))}
               </div>
               <div className="pt-4 border-t border-zinc-800 flex flex-wrap gap-2">
                 {r.compliance.map((c) => (
-                  <span key={c} className="px-2 py-1 border border-zinc-700 rounded text-[10px] font-mono text-zinc-400">
+                  <span key={c} className="tag">
                     [{c}]
                   </span>
                 ))}
@@ -603,28 +606,30 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-        <div className="mt-4 p-4 rounded border border-zinc-800 bg-zinc-950">
+        <div className="mt-5 glow-card p-4">
           <p className="font-mono text-xs text-zinc-500 text-center">
             <span className="text-emerald-400 font-bold">GUARANTEE:</span> Customer telemetry, scan results, and remediation logs are processed exclusively within the customer&apos;s designated cloud region. Zero cross-border data transfer.
           </p>
         </div>
       </section>
 
-      <div className="border-t border-zinc-900" />
+      <div className="divider-glow mx-6 lg:mx-16" />
 
       {/* ── 7. TIME TO VALUE ── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">TIME TO VALUE</p>
-        <h2 className="text-3xl font-bold text-white mb-2">From deployment to first remediation in 30 minutes.</h2>
-        <p className="text-zinc-500 mb-12 text-sm">Zero agents. Zero code changes. Connect via secure cross-account IAM role and the engine does the rest.</p>
+        <div className="mb-12">
+          <p className="section-label mb-4">Time to Value</p>
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight">From deployment to first remediation in 30 minutes.</h2>
+          <p className="text-zinc-500 text-sm">Zero agents. Zero code changes. Connect via secure cross-account IAM role and the engine does the rest.</p>
+        </div>
 
         <div className="grid lg:grid-cols-4 gap-4">
           {ONBOARDING.map((s, i) => (
             <div key={s.step} className="relative">
               {i < ONBOARDING.length - 1 && (
-                <div className="hidden lg:block absolute top-6 left-full w-full h-px bg-zinc-800 z-0" />
+                <div className="hidden lg:block absolute top-6 left-full w-full h-px bg-gradient-to-r from-violet-800/40 to-transparent z-0" />
               )}
-              <div className="relative z-10 rounded border border-zinc-800 p-5 bg-zinc-950">
+              <div className="glow-card accent-top relative z-10 p-5 lift">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="font-mono text-[10px] text-zinc-600">{s.step}</span>
                   <span className="font-mono text-[10px] text-violet-400">{s.time}</span>
@@ -637,14 +642,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="border-t border-zinc-900" />
+      <div className="divider-glow mx-6 lg:mx-16" />
 
       {/* ── OUTCOME SECTION ── */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center">
-        <p className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest mb-4">WHAT HAPPENS AFTER DEPLOYMENT</p>
-        <h2 className="text-3xl lg:text-4xl font-bold text-white mb-10">
+        <p className="section-label mb-4 justify-center">After Deployment</p>
+        <h2 className="text-3xl lg:text-4xl font-bold text-white mb-10 leading-tight">
           Threats are resolved{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400">
             before your team sees them.
           </span>
         </h2>
@@ -654,9 +659,9 @@ export default function HomePage() {
             { val: "No manual triage.",  sub: "The engine synthesizes the fix. No ticket required." },
             { val: "No delayed response.",sub: "Detection to remediation in under 45 seconds." },
           ].map((o) => (
-            <div key={o.val} className="rounded border border-zinc-800 p-6 bg-zinc-950 text-left relative overflow-hidden">
+            <div key={o.val} className="glow-card accent-top relative p-6 text-left overflow-hidden lift">
               <div aria-hidden className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
-              <div className="font-mono text-base font-bold text-emerald-400 mb-2">{o.val}</div>
+              <div className="font-mono text-base font-bold text-emerald-400 stat-glow mb-2">{o.val}</div>
               <p className="text-[11px] text-zinc-500 leading-relaxed">{o.sub}</p>
             </div>
           ))}
@@ -665,11 +670,9 @@ export default function HomePage() {
           POLICY-BOUND · ROLLBACK-SAFE · CRYPTOGRAPHICALLY AUDITED
         </p>
       </section>
-
       <FirstExperience />
-
-      <div className="border-t border-zinc-900" />
-
+      <Integrations />
+      <Testimonial />
       <ConversionCTA />
 
     </div>

@@ -72,34 +72,28 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
 
 export function Footer() {
   return (
-    <footer className="relative mt-32 border-t border-sage-soft">
-      {/* Botanical mesh glow seeping from footer top */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-matcha-600/50 to-transparent"
-      />
+    <footer className="relative mt-24 border-t border-[rgba(45,36,89,0.6)]">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-600/40 to-transparent" />
       <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
-          <div>
-            <Link href="/" className="flex items-center gap-2 mb-3 cursor-dot">
-              <div className="flex items-center justify-center bg-matcha-600 text-white font-bold rounded" style={{ width: 24, height: 24, fontSize: 14 }}>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-14">
+          <div className="col-span-2 md:col-span-1">
+            <Link href="/" className="flex items-center gap-2.5 mb-4 cursor-dot group">
+              <div className="w-7 h-7 rounded-lg bg-matcha-600 text-white font-black text-[13px] flex items-center justify-center shadow-[0_0_12px_rgba(124,58,237,0.35)] group-hover:shadow-[0_0_20px_rgba(124,58,237,0.5)] transition-shadow">
                 T
               </div>
-              <span className="font-mono font-bold text-[14px] tracking-[0.1em] text-stone-50 uppercase">Tricognita</span>
+              <span className="font-mono font-bold text-[13px] tracking-[0.1em] text-stone-50 uppercase">Tricognita</span>
             </Link>
-            <p className="font-mono text-[13px] leading-relaxed text-stone-300 max-w-[220px]">
-              Autonomous cloud resilience —
-              <br />
-              engineered with ARIA.
+            <p className="font-mono text-[12px] leading-relaxed text-stone-500 max-w-[200px]">
+              Autonomous cloud resilience — engineered with ARIA.
             </p>
           </div>
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <p className="eyebrow mb-4">{col.title}</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500 mb-4">{col.title}</p>
               <ul className="space-y-2.5">
                 {col.links.map((l) => (
                   <li key={`${col.title}-${l.label}`}>
-                    <Link href={l.href} className="link-draw text-[13px] text-stone-300 cursor-dot">
+                    <Link href={l.href} className="text-[13px] text-stone-500 hover:text-stone-200 transition-colors cursor-dot">
                       {l.label}
                     </Link>
                   </li>
@@ -109,28 +103,17 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-14 pt-6 border-t border-sage-soft space-y-4">
-          {/* Social icons row */}
+        <div className="pt-8 border-t border-[rgba(45,36,89,0.5)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             {SOCIALS.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.label}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-moss-rise/60 text-stone-400 hover:text-matcha-300 hover:bg-moss-hi transition-colors ring-1 ring-sage-soft cursor-dot"
-              >
+              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgba(26,21,51,0.6)] text-stone-500 hover:text-matcha-300 hover:bg-[rgba(45,36,89,0.6)] transition-colors ring-1 ring-[rgba(45,36,89,0.8)] cursor-dot">
                 {s.icon}
               </a>
             ))}
-            <span className="ml-2 font-mono text-[10px] text-stone-600 uppercase tracking-widest">
-              Follow us
-            </span>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-stone-500">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-stone-600">
               © {new Date().getFullYear()} Tricognita · Engineered for resilient infrastructure
             </p>
             <div className="flex items-center gap-2">
@@ -147,13 +130,10 @@ export function Footer() {
 
 function StatusBadge({ label, status }: { label: string; status: string }) {
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide bg-moss-rise/60 text-stone-300 ring-1 ring-sage-soft"
-      title="Trust posture is published on the Security page."
-    >
-      <span className="font-semibold">{label}</span>
-      <span className="text-stone-500">·</span>
-      <span className="text-stone-400">{status}</span>
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide bg-[rgba(26,21,51,0.6)] text-stone-400 ring-1 ring-[rgba(45,36,89,0.7)]">
+      <span className="font-semibold text-stone-300">{label}</span>
+      <span className="text-stone-600">·</span>
+      <span className="text-stone-500">{status}</span>
     </span>
   );
 }

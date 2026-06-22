@@ -14,7 +14,8 @@ const LINKS = [
   { href: "/contact",   label: "Contact" },
 ];
 
-// Indigo badge mark
+// Indigo badge mark — kept for potential reuse
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function Mark({ className = "" }: { className?: string }) {
   return (
     <div className={`flex items-center justify-center bg-matcha-600 text-white font-bold rounded ${className}`} style={{ width: 24, height: 24, fontSize: 14 }}>
@@ -29,43 +30,49 @@ export function MarketingNav() {
 
   return (
     <header className="sticky top-0 z-40">
-      {/* Translucent matcha-tinted glass rail */}
-      <div className="absolute inset-0 bg-[rgba(11,9,20,0.72)] backdrop-blur-xl border-b border-sage-soft" />
-      <div className="relative max-w-7xl mx-auto flex items-center justify-between gap-6 px-6 py-4">
-        <Link href="/" className="group flex items-center gap-2.5 cursor-dot">
-          <Mark className="transition-transform duration-500 group-hover:scale-105" />
-          <span className="font-mono font-bold text-[14px] tracking-[0.1em] text-stone-50 border border-sage-soft px-2 py-0.5 rounded uppercase">
+      <div className="absolute inset-0 bg-[rgba(8,6,16,0.85)] backdrop-blur-2xl" />
+      {/* Bottom border with gradient glow */}
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[rgba(124,58,237,0.2)] to-transparent" />
+      <div className="relative max-w-7xl mx-auto flex items-center justify-between gap-6 px-6 py-3.5">
+        <Link href="/" className="group flex items-center gap-3 cursor-dot">
+          <div className="relative flex items-center justify-center w-7 h-7 rounded-lg bg-matcha-600 text-white font-black text-[13px] shadow-[0_0_16px_rgba(124,58,237,0.4)] transition-shadow group-hover:shadow-[0_0_24px_rgba(124,58,237,0.6)]">
+            T
+          </div>
+          <span className="font-mono font-bold text-[13px] tracking-[0.12em] text-white uppercase">
             Tricognita
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main">
+        <nav className="hidden md:flex items-center gap-0.5" aria-label="Main">
           {LINKS.slice(1).map((l) => {
             const active = pathname === l.href;
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`link-draw px-3 py-1.5 text-[13px] font-medium cursor-dot ${
-                  active ? "text-matcha-200" : "text-stone-300"
+                className={`relative px-3.5 py-2 text-[13px] font-medium rounded-md transition-colors cursor-dot ${
+                  active
+                    ? "text-matcha-200 bg-matcha-900/20"
+                    : "text-stone-400 hover:text-stone-100 hover:bg-white/[0.04]"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
                 {l.label}
+                {active && <span className="absolute bottom-0 left-3 right-3 h-px bg-matcha-500 rounded-full" />}
               </Link>
             );
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="hidden sm:inline-block px-3 py-1.5 text-[13px] text-stone-300 hover:text-matcha-200 transition-colors cursor-dot"
+            className="hidden sm:inline-block px-3.5 py-2 text-[13px] text-stone-400 hover:text-stone-100 transition-colors rounded-md hover:bg-white/[0.04] cursor-dot"
           >
-            Log in
+            Sign in
           </Link>
-          <Link href="/contact" className="btn-matcha !px-5 !py-2.5 !text-[13px] cursor-dot">
-            Begin Onboarding
+          <Link href="/contact" className="btn-primary !py-2 !px-5 !text-[13px] cursor-dot">
+            Book a Demo
           </Link>
           <button
             onClick={() => setOpen((o) => !o)}
