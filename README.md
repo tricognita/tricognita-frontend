@@ -10,6 +10,10 @@
 
 Tricognita is an AI-native cloud security platform. It scans AWS / Azure / GCP environments for posture drift, surfaces findings with attack-path context, and orchestrates remediation through a tiered approval workflow. This repository is the **public frontend** — the Next.js dashboard plus the BFF (backend-for-frontend) layer that fronts the Go API.
 
+## What Tricognita is
+
+Tricognita is an AI-native cloud security platform designed to monitor and secure multi-tenant cloud environments. It continuously scans AWS, Azure, and GCP for misconfigurations and posture drift, maps risks using attack-path context, and enables controlled remediation through an approval-based workflow system.
+
 ## What's in this repository
 
 - **Dashboard** (`app/`) — Next.js 16 + React 19 App Router. Workflow surfaces: findings, attack graph, incidents, SOC, queue, executive reporting.
@@ -18,6 +22,10 @@ Tricognita is an AI-native cloud security platform. It scans AWS / Azure / GCP e
 - **Shared libraries** (`lib/`) — typed building blocks: telemetry, plans, lifecycle, usage accounting, feedback, webhooks, notifications.
 - **Demo data** (`lib/demo-data.ts`) — synthetic dataset so local development works without real cloud credentials.
 - **Documentation** (`docs/`) — architecture, security, integration, and pricing documentation. Public-safe.
+
+### What the frontend repository contains
+
+This repository contains the complete frontend layer of Tricognita, including the user-facing dashboard built with Next.js, a Backend-for-Frontend (BFF) layer for secure API communication, middleware for authentication and RBAC enforcement, and shared libraries for core application logic. It also includes demo data for local development and public-safe documentation.
 
 ## What's NOT in this repository
 
@@ -55,6 +63,8 @@ Tricognita's design choices around the dashboard layer:
 
 ## Local development
 
+### How to set up locally
+
 ```bash
 git clone https://github.com/tricognita/tricognita-frontend.git
 cd tricognita-frontend
@@ -90,6 +100,19 @@ We welcome contributions! Start here:
 3. **Understand** [`docs/BRANCH_STRATEGY.md`](./docs/BRANCH_STRATEGY.md) — our branch workflow
 4. **Find** an issue labeled `good first issue` or `help wanted`
 
+### How contributors can join
+
+Contributors can join by reviewing the CONTRIBUTING.md guide, exploring the architecture map in docs/, and selecting issues labeled "good first issue" or "help wanted". All contributions follow a pull request workflow and require review before merging.
+
+### How to contribute
+
+1. Fork the repository
+2. Create a feature branch (feature/your-feature-name)
+3. Make changes following project standards
+4. Run lint, type-check, and build locally
+5. Submit a PR to the develop branch
+
+
 ### Branch workflow (quick version)
 
 ```
@@ -97,6 +120,18 @@ feature/* ──PR──▶ develop ──PR──▶ main (production)
 ```
 
 All standard PRs target `develop`. Production deploys happen only when `develop` is merged to `main` after CI + review.
+
+## Project structure
+
+tricognita-frontend/
+├── app/                  # Next.js App Router (UI layer)
+│   ├── api/              # BFF routes (server-side logic)
+├── lib/                  # Shared libraries (telemetry, plans, notifications, etc.)
+├── docs/                 # Documentation
+├── middleware.ts         # Edge auth + RBAC + CSRF
+├── .env.example          # Environment template
+├── package.json          # Dependencies and scripts
+└── README.md             # Documentation
 
 ### For security reviewers
 
