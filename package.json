@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1034.0",
-    "@upstash/redis": "^1.37.0",
+    "@upstash/redis": "^1.38.0",
     "@xyflow/react": "^12.10.2",
     "axios": "^1.18.0",
     "framer-motion": "^12.40.0",
