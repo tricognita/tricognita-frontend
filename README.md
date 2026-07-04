@@ -82,6 +82,8 @@ Open [http://localhost:3000](http://localhost:3000). Log in with the demo admin 
 
 If you hit issues, see [`docs/SETUP_TROUBLESHOOTING.md`](./docs/SETUP_TROUBLESHOOTING.md).
 
+> **⚠️ Never commit secrets.** `.env.local` (and any file containing real credentials, tokens, or keys) must **never** be committed. Only `.env.example` — with placeholders, no real values — belongs in version control. `.env*` files are already git-ignored; keep it that way. If you think a secret was committed, rotate it immediately and flag a maintainer. See [`OSS_SAFE.md`](./OSS_SAFE.md).
+
 ## Useful scripts
 
 ```bash
@@ -123,6 +125,7 @@ All standard PRs target `develop`. Production deploys happen only when `develop`
 
 ## Project structure
 
+```text
 tricognita-frontend/
 ├── app/                  # Next.js App Router (UI layer)
 │   ├── api/              # BFF routes (server-side logic)
@@ -132,6 +135,7 @@ tricognita-frontend/
 ├── .env.example          # Environment template
 ├── package.json          # Dependencies and scripts
 └── README.md             # Documentation
+```
 
 ### For security reviewers
 
