@@ -10,10 +10,16 @@ import { canUseModule } from "@/lib/rbac";
 // `module` is the key checked against user.modules for per-employee visibility.
 const NAV: Array<{ href: string; label: string; roles?: Role[]; module?: string }> = [
   { href: "/dashboard",               label: "Command",       module: "Overview"    },
-  { href: "/dashboard/executive",     label: "Executive",     module: "Overview"    },
+  // Executive renders synthetic data — hidden unless explicitly enabled (dev/demo).
+  ...(process.env.NEXT_PUBLIC_ENABLE_DEMO_EXECUTIVE === "true"
+    ? [{ href: "/dashboard/executive", label: "Executive", module: "Overview" }]
+    : []),
   { href: "/dashboard/aria",          label: "ARIA",          module: "ARIA Console", roles: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
   { href: "/dashboard/attack-graph",  label: "Attack Graph",  module: "Attack Graph" },
   { href: "/dashboard/compliance",    label: "Compliance",    module: "Compliance" },
+  { href: "/dashboard/control-posture", label: "Control Posture", module: "Assurance" },
+  { href: "/dashboard/coverage",        label: "Coverage",        module: "Assurance" },
+  { href: "/dashboard/assurance",       label: "Verdict Ledger",  module: "Assurance" },
   { href: "/dashboard/findings",      label: "Findings",      module: "Findings"   },
   { href: "/dashboard/audit-trail",   label: "Audit Trail",   module: "Findings",     roles: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD"] },
   { href: "/dashboard/credentials",   label: "Accounts",      module: "Settings",     roles: ["ADMIN", "SECOPS", "CLOUD_ENGINEER", "DEVSECOPS"] },
@@ -65,6 +71,7 @@ export function DashboardNav() {
 
   return (
     <nav
+      aria-label="Primary"
       className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b"
       style={{
         background: "rgba(11,9,20,0.85)",
@@ -74,9 +81,14 @@ export function DashboardNav() {
     >
       {/* Brand mark */}
       <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0 cursor-dot">
-        <div className="flex items-center justify-center bg-matcha-600 text-white font-bold rounded" style={{ width: 22, height: 22, fontSize: 12 }}>
-          T
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
+        <img
+          src="/brand/tricognita-mark.png"
+          alt="Tricognita"
+          width={24}
+          height={24}
+          style={{ width: 24, height: 24 }}
+        />
         <span className="font-semibold text-sm text-stone-50 tracking-tight font-mono">Tricognita</span>
         <span className="text-[9px] font-mono text-matcha-400 border border-matcha-400/30 px-1.5 py-0.5 rounded-full">ARIA</span>
       </Link>

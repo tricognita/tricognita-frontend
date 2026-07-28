@@ -43,6 +43,10 @@ export default function OnboardingPage() {
 
   async function saveCredential() {
     if (!roleArn) { next(); return; } // skip if empty
+    if (!extId.trim()) {
+      setCredError("External ID is required — use the unique per-tenant value issued during onboarding.");
+      return;
+    }
     setSaving(true); setCredError(null);
     try {
       const res = await fetch("/api/credentials", {
@@ -154,8 +158,9 @@ export default function OnboardingPage() {
             <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-3 text-xs text-zinc-400 leading-relaxed">
               <span className="text-zinc-300 font-semibold">Quick setup:</span>{" "}
               In AWS Console → IAM → Create Role → Trusted entity:{" "}
-              <code className="text-violet-400 font-mono">arn:aws:iam::123456789012:root</code>{" "}
-              → Attach <code className="text-violet-400">ReadOnlyAccess</code> + <code className="text-violet-400">SecurityAudit</code>
+              <code className="text-violet-400 font-mono">arn:aws:iam::117459925630:root</code>{" "}
+              → Attach <code className="text-violet-400">ReadOnlyAccess</code> + <code className="text-violet-400">SecurityAudit</code>{" "}
+              → set the required <span className="text-zinc-300 font-semibold">External ID</span> to your per-tenant value (confused-deputy protection).
             </div>
 
             <div className="space-y-3">
@@ -173,8 +178,8 @@ export default function OnboardingPage() {
                   <input value={accountId} onChange={e => setAccountId(e.target.value)} placeholder="123456789012" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">External ID</label>
-                  <input value={extId} onChange={e => setExtId(e.target.value)} placeholder="optional" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">External ID <span className="text-violet-400">*</span></label>
+                  <input value={extId} onChange={e => setExtId(e.target.value)} placeholder="your tenant ExternalId" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
                 </div>
               </div>
               <div>

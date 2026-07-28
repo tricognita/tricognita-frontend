@@ -1,5 +1,6 @@
 import { signSession, signRefreshToken, sessionCookieName, sessionCookieOptions, refreshCookieName, refreshCookieOptions } from "@/lib/auth";
 import { verifyPassword, touchLogin } from "@/lib/users";
+import { verifyViaGo } from "@/lib/identity-client";
 import { checkLimit, recordFailure, clearOnSuccess, clientIpFromHeaders } from "@/lib/rate-limit";
 import { verifyMFAToken } from "@/lib/mfa";
 import { recordEvent } from "@/lib/datasets";
@@ -98,8 +99,15 @@ export async function POST(req: Request): Promise<Response> {
   if (!emailCheck.allowed) return rateLimitResponse(emailCheck.retryAfterSeconds);
 
   // ── Credential verification ──────────────────────────────────────────────────
+  // F1.4 (Option B): when IDENTITY_SOURCE=postgres, verify against the Go
+  // Identity API (Postgres-backed); otherwise use the legacy BFF store. The BFF
+  // still issues the edge session in both cases. Default keeps the legacy store,
+  // so production is unchanged until the migration validation gate passes.
   try {
-    const user = await verifyPassword(email, password);
+    const user =
+      process.env.IDENTITY_SOURCE === "postgres"
+        ? await verifyViaGo(email, password)
+        : await verifyPassword(email, password);
     if (!user) {
       await recordFailure(ipKey);
       await recordFailure(emailKey);

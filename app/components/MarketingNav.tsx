@@ -14,12 +14,18 @@ const LINKS = [
   { href: "/contact",   label: "Contact" },
 ];
 
-// Indigo badge mark
+// Tricognita octopus-in-triangle brand mark (canonical asset: /public/brand)
 function Mark({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center bg-matcha-600 text-white font-bold rounded ${className}`} style={{ width: 24, height: 24, fontSize: 14 }}>
-      T
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element -- static brand mark; next/image adds no value at this size
+    <img
+      src="/brand/tricognita-mark.png"
+      alt="Tricognita"
+      width={26}
+      height={26}
+      className={className}
+      style={{ width: 26, height: 26 }}
+    />
   );
 }
 

@@ -15,7 +15,7 @@ const ITEMS: Resource[] = [
   { kind: "Technical Brief", title: "Tenant Isolation in a Multi-Tenant Control Plane",        sub: "How Tricognita scopes data and remediations per tenant — including the API-layer rejections that back it up.",         status: "Coming Soon" },
   { kind: "Blog",            title: "Prompt Injection Is a Cloud Security Problem",            sub: "Defending Bedrock, Anthropic, and OpenAI workloads with runtime policy via ARIA Guard.",                                status: "Coming Soon" },
   { kind: "Blog",            title: "Read-only Onboarding: Why Day-One Audits Should Be Free", sub: "The case for a 14-day, no-writes audit as the default first contact between a security platform and a customer.",       status: "Coming Soon" },
-  { kind: "Field Note",      title: "What We Learned in the Founding Cohort",                  sub: "Patterns we've seen across the founding-cohort customers — and what we changed in the product because of them.",      status: "Coming Soon" },
+  { kind: "Field Note",      title: "What We Learned in the Founding Cohort",                  sub: "Patterns we've seen across the founding cohort — and what we changed in the product because of them.",      status: "Coming Soon" },
 ];
 
 export default function ResourcesPage() {
@@ -25,8 +25,8 @@ export default function ResourcesPage() {
         <p className="text-[10px] uppercase tracking-widest text-violet-500 font-semibold mb-3">Resources</p>
         <h1 className="text-4xl sm:text-5xl font-bold text-zinc-50 tracking-tight">Research, briefs, and field notes.</h1>
         <p className="mt-5 max-w-2xl mx-auto text-base text-zinc-400 leading-relaxed">
-          How we think about autonomous cloud resilience — and the work our customers are
-          shipping on top of it.
+          How we think about policy-bound cloud resilience — and the field notes from
+          building it with our founding cohort.
         </p>
       </section>
 

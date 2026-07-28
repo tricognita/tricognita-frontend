@@ -97,7 +97,7 @@ export function ExecutionProof() {
             ))}
           </div>
           <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest italic pt-4">
-            “Currently deployed in early-stage cloud-native environments”
+            “Built for early-stage cloud-native environments — onboarding our founding cohort now”
           </p>
         </div>
       </div>
@@ -116,10 +116,10 @@ export function ConversionCTA() {
         </span>
       </h2>
       <p className="text-zinc-500 mb-10 text-lg">
-        Deploy the autonomous control plane. Your infrastructure. Your governance. Zero alert fatigue.
+        Deploy the control plane. Your infrastructure. Your governance. Default-deny by design — nothing executes without your approval.
       </p>
       <div className="flex flex-wrap gap-4 justify-center">
-        <a href="/register" className="px-8 py-4 bg-violet-600 text-white font-bold rounded text-sm hover:bg-violet-500 transition-colors">
+        <a href="/contact" className="px-8 py-4 bg-violet-600 text-white font-bold rounded text-sm hover:bg-violet-500 transition-colors">
           Start Free Audit
         </a>
         <a href="/contact" className="px-8 py-4 border border-zinc-700 text-zinc-300 font-bold rounded text-sm hover:border-zinc-500 transition-colors">

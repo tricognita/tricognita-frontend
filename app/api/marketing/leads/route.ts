@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { cookies } from "next/headers";
 import { verifySession, sessionCookieName } from "@/lib/auth";
@@ -6,7 +6,7 @@ import { verifySession, sessionCookieName } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Auth Guard
     const jar = await cookies();

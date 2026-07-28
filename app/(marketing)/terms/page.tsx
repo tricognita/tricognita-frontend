@@ -24,7 +24,7 @@ export default function TermsPage() {
 
         <h2 className="text-lg font-semibold text-zinc-100 pt-4">3. Data Residency & Processing</h2>
         <p>
-          Your telemetry and cloud state data is processed strictly in accordance with your chosen deployment tier. For UAE/Saudi Sovereign deployments, data remains within `me-south-1` or `me-central-1`. By using the Service, you execute our standard Data Processing Agreement (DPA).
+          Tricognita uses a control-plane architecture: your raw cloud resources and state data remain in your own cloud account and designated region, while the Tricognita control plane stores the posture findings, remediation logs, and tamper-evident audit chain it generates — along with account metadata — on the sub-processors named in our DPA. Regional control-plane residency options for sovereign deployments (including UAE / Saudi Arabia) are available for enterprise tiers and confirmed in your Order Form before provisioning. By using the Service, you execute our standard Data Processing Agreement (DPA).
         </p>
 
         <h2 className="text-lg font-semibold text-zinc-100 pt-4">4. Intellectual Property</h2>

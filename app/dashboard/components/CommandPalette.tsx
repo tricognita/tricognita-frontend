@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Terminal, AlertTriangle, Shield, Cpu, X, FileCheck, Users, Activity } from "lucide-react";
+import { Search, AlertTriangle, Users, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CommandAction {
@@ -47,14 +47,14 @@ export function CommandPalette({ isOpen, setIsOpen }: { isOpen: boolean, setIsOp
     }
   }, [isOpen]);
 
+  // Only real, wired navigation actions are exposed. Non-functional "Actions"
+  // (Run Fleet Scan / Generate SOC2 Report / Open CLI Mode) were removed —
+  // they console.log'd and closed, i.e. dead buttons. Re-add each ONLY when it
+  // routes to a real, working flow (QA finding F-WEB5).
   const actions: CommandAction[] = [
-    { id: "1", icon: Shield, title: "Run Fleet Scan", category: "Actions", action: () => { console.log("Scanning"); setIsOpen(false); } },
     { id: "2", icon: AlertTriangle, title: "View Active Incidents", category: "Navigation", action: () => { router.push("/dashboard/incidents"); setIsOpen(false); } },
     { id: "3", icon: Activity, title: "Open ARIA Console", category: "Navigation", action: () => { router.push("/dashboard/aria"); setIsOpen(false); } },
-    { id: "4", icon: Cpu, title: "AI Security Posture", category: "Navigation", action: () => { router.push("/dashboard/ai-security"); setIsOpen(false); } },
-    { id: "5", icon: FileCheck, title: "Generate SOC2 Report", category: "Actions", action: () => { console.log("Report"); setIsOpen(false); } },
     { id: "6", icon: Users, title: "Manage Team Access", category: "Navigation", action: () => { router.push("/dashboard/users"); setIsOpen(false); } },
-    { id: "7", icon: Terminal, title: "Open CLI Mode", category: "Actions", shortcut: ["⌘", "Shift", "C"], action: () => { console.log("CLI"); setIsOpen(false); } },
   ];
 
   const filtered = query === "" 

@@ -1,0 +1,248 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   TRICOGNITA DESIGN TOKENS · LAYER 2 — SEMANTIC ROLES
+   ------------------------------------------------------------------------------
+   Roles map primitives → meaning. THIS is what components and geometry/motion
+   primitives consume (via `var(--role)` or the Tailwind utilities generated from
+   these in globals.css `@theme inline`). Components never touch Layer 1.
+
+   Theme model: a single `[data-theme]` attribute on <html> (set pre-hydration by
+   ThemeScript) swaps the color roles. All other roles (space, radius, motion,
+   type, grid, z) are theme-independent and defined once.
+
+   Traceability: DESIGN_LANGUAGE_SYSTEM.md §4/§6/§7 · TRICOGNITA_VISUAL_OS.md
+   · ENGINEERING_VISUAL_LANGUAGE.md (motion physics) · ENGINEERING_NARRATIVE.md.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   COLOR ROLES — DARK (default)
+   ────────────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+
+  /* Substrate — the constant, ~90% of every surface (DLS §7.1) */
+  --void:             var(--_graphite-950);
+  --substrate:        var(--_graphite-900);
+  --panel:            var(--_graphite-800);
+  --panel-raised:     var(--_graphite-750);
+  --graticule:        var(--_graphite-700);
+  --graticule-strong: var(--_graphite-600);
+
+  /* Text (bone) */
+  --fg:               var(--_bone-100);
+  --fg-muted:         var(--_bone-500);
+  --fg-subtle:        var(--_bone-700);
+
+  /* State grammar — meaning only, never decoration */
+  --state-nominal:        var(--_nominal-500);
+  --state-nominal-strong: var(--_nominal-600);
+  --state-engaged:        var(--_engaged-500);
+  --state-engaged-strong: var(--_engaged-600);
+  --state-advisory:       var(--_advisory-500);
+  --state-advisory-strong:var(--_advisory-600);
+  --state-halt:           var(--_halt-500);
+  --state-halt-strong:    var(--_halt-600);
+  /* Ink placed ON a saturated state fill (chips, seals). */
+  --on-state:             var(--_graphite-950);
+
+  /* Cognita colormap stops (Evidence Graph only) */
+  --cognita-0: var(--_cognita-0);
+  --cognita-1: var(--_cognita-1);
+  --cognita-2: var(--_cognita-2);
+  --cognita-3: var(--_cognita-3);
+  --cognita-4: var(--_cognita-4);
+
+  /* Accessibility — neutral high-contrast focus, not stateful (DLS §10) */
+  --focus-ring-color:  var(--_bone-100);
+  --focus-ring-width:  2px;
+  --focus-ring-offset: 2px;
+  --tap-min:           44px;   /* WCAG 2.5.5 minimum target */
+  --disabled-opacity:  0.45;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   COLOR ROLES — LIGHT  (designed independently; states deepened for AA)
+   ────────────────────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --void:             var(--_paper-000);
+  --substrate:        var(--_paper-100);
+  --panel:            var(--_paper-200);
+  --panel-raised:     var(--_paper-000);
+  --graticule:        var(--_paper-line);
+  --graticule-strong: var(--_paper-line-strong);
+
+  --fg:               var(--_ink-900);
+  --fg-muted:         var(--_ink-500);
+  --fg-subtle:        var(--_ink-700);
+
+  --state-nominal:        var(--_nominal-ink);
+  --state-nominal-strong: var(--_nominal-ink);
+  --state-engaged:        var(--_engaged-ink);
+  --state-engaged-strong: var(--_engaged-ink);
+  --state-advisory:       var(--_advisory-ink);
+  --state-advisory-strong:var(--_advisory-ink);
+  --state-halt:           var(--_halt-ink);
+  --state-halt-strong:    var(--_halt-ink);
+  --on-state:             var(--_paper-000);
+
+  --focus-ring-color:     var(--_ink-900);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   SCALE ROLES — theme-independent (defined once)
+   ────────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ── Spacing — 8px base grid, near-golden growth (DLS §4.1) ───────────────── */
+  --space-0:     0;
+  --space-hair:  1px;
+  --space-micro: 4px;
+  --space-1:     8px;
+  --space-2:     16px;
+  --space-3:     24px;
+  --space-4:     40px;
+  --space-5:     64px;
+  --space-6:     104px;
+  --space-7:     168px;
+  --space-8:     272px;
+  --space-9:     440px;
+
+  /* ── Radius — instrument-hard by default (DLS §8 kill list: no SaaS pills) ── */
+  --radius-none:  0;
+  --radius-hair:  1px;
+  --radius-tight: 2px;
+  --radius-panel: 4px;
+  --radius-curl:  6px;    /* the "arm curl" — constant-radius fillet at 45° vertices */
+  --radius-full:  9999px; /* state dots / seals only */
+
+  /* ── Elevation — hairline-first; NO colored glow, ever (DLS §8) ───────────── */
+  --elevation-flat:   none;
+  --elevation-hair:   inset 0 0 0 1px var(--graticule);
+  --elevation-panel:  inset 0 0 0 1px var(--graticule), 0 1px 0 rgba(0,0,0,0.35);
+  --elevation-raised: inset 0 0 0 1px var(--graticule-strong), 0 12px 32px -20px rgba(0,0,0,0.70);
+
+  /* ── Grid & geometry — the coordinate system + the two angle laws (DLS §4) ── */
+  --grid-unit:      8px;    /* base module */
+  --grid-cell:      32px;   /* visible graticule spacing */
+  --hairline:       1px;
+  --container-max:  1200px;
+  --gutter:         var(--space-3);
+  --angle-radial:   45deg;  /* PRODUCT — control-plane routing (DLS §4.2) */
+  --angle-boundary: 60deg;  /* BRAND  — trust-boundary framing (DLS §4.3) */
+
+  /* ── Z-index — one ordered scale ──────────────────────────────────────────── */
+  --z-base:      0;
+  --z-graticule: 1;
+  --z-content:   2;
+  --z-raised:    10;
+  --z-nav:       50;
+  --z-overlay:   100;
+  --z-toast:     200;
+
+  /* ── Typography ───────────────────────────────────────────────────────────── */
+  /* Display face is the SINGLE swap point when the PP Neue Montreal decision
+     lands (DLS §6 open decision); interim = Geist at heavy weight. */
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-text:    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --text-2xs: 0.6875rem;  /* 11 — mono labels */
+  --text-xs:  0.75rem;    /* 12 */
+  --text-sm:  0.8125rem;  /* 13 */
+  --text-base:0.9375rem;  /* 15 */
+  --text-md:  1.0625rem;  /* 17 */
+  --text-lg:  1.25rem;    /* 20 */
+  --text-xl:  1.625rem;   /* 26 */
+  --text-2xl: 2.125rem;   /* 34 */
+  --text-3xl: 2.875rem;   /* 46 */
+  --text-4xl: 3.875rem;   /* 62 */
+  --text-5xl: 5.25rem;    /* 84 — hero display */
+
+  --leading-tight:  1.05;
+  --leading-snug:   1.2;
+  --leading-data:   1.35;
+  --leading-normal: 1.5;
+
+  --tracking-display: -0.03em;
+  --tracking-tight:   -0.01em;
+  --tracking-normal:  0;
+  --tracking-label:   0.14em;   /* mono uppercase labels */
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* Tabular figures for machine truth (readouts, hashes, timings) — DLS §6.1 */
+  --numeric-tabular: "tnum" 1, "lnum" 1;
+
+  /* ── Motion — the engineering physics (EVL five laws) ─────────────────────── */
+  /* Durations */
+  --dur-instant: 0ms;
+  --dur-tick:    90ms;    /* deterministic quantized stage — LINEAR (EVL §1) */
+  --dur-snap:    120ms;   /* discrete state transition (EVL §0.3) */
+  --dur-seal:    180ms;   /* seal snaps shut (EVL §8) */
+  --dur-settle:  240ms;   /* settle-and-lock arrival (EVL §0.4) */
+  --dur-flow:    600ms;   /* a signal traversing a rail (EVL §4) */
+  --dur-reveal:  700ms;   /* brand section reveal (DLS §5.3) */
+
+  /* Boot / activation sequence — ≤380ms total (Visual OS §3) */
+  --dur-boot-boundary: 120ms;
+  --dur-boot-core:     80ms;
+  --dur-boot-evidence: 80ms;
+  --dur-boot-total:    380ms;
+
+  /* Staggers */
+  --stagger-arm:  18ms;   /* the 8 arms reach domains */
+  --stagger-node: 30ms;   /* evidence nodes settle */
+  --stagger-gate: 60ms;   /* policy gates resolve down a rail */
+
+  /* Easings — computation is mechanical (linear); arrival settles (no bounce) */
+  --ease-linear:   linear;
+  --ease-settle:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap:     cubic-bezier(0.30, 0, 0.10, 1);
+  --ease-standard: cubic-bezier(0.40, 0, 0.20, 1);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION — render the LOCKED end-state, instantly (EVL §0.4 / laws)
+   Zeroing the duration/stagger tokens makes every token-driven transition resolve
+   to its final state with no animation. JS motion primitives (Phase 3) also read
+   `prefers-reduced-motion` to skip straight to the locked frame.
+   ────────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-tick: 0ms;    --dur-snap: 0ms;    --dur-seal: 0ms;
+    --dur-settle: 0ms;  --dur-flow: 0ms;    --dur-reveal: 0ms;
+    --dur-boot-boundary: 0ms; --dur-boot-core: 0ms; --dur-boot-evidence: 0ms;
+    --dur-boot-total: 0ms;
+    --stagger-arm: 0ms; --stagger-node: 0ms; --stagger-gate: 0ms;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY UTILITIES — foundation only (no components)
+   ────────────────────────────────────────────────────────────────────────────── */
+/* Screen-reader-only content (wordless-first is not wordless-only — DLS §3.3). */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.not-sr-only {
+  position: static;
+  width: auto; height: auto;
+  margin: 0; overflow: visible;
+  clip: auto; white-space: normal;
+}
+
+/* Canonical focus ring — visible, on-grid, theme-aware (DLS §10). Opt-in via
+   class so Phase 1 does not restyle any existing interactive element. */
+.focus-ring:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

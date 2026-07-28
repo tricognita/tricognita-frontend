@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/brand/tricognita-lockup-dark.png" alt="Tricognita — octopus-in-triangle logo" width="360" />
+</p>
+
 # Tricognita
 
 > Multi-tenant cloud security posture management with AI-assisted remediation.
@@ -8,7 +12,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](./CODE_OF_CONDUCT.md)
 
-Tricognita is an AI-native cloud security platform. It scans AWS / Azure / GCP environments for posture drift, surfaces findings with attack-path context, and orchestrates remediation through a tiered approval workflow. This repository is the **public frontend** — the Next.js dashboard plus the BFF (backend-for-frontend) layer that fronts the Go API.
+Tricognita is an AI-native cloud security platform. It scans AWS / Azure / GCP environments for posture drift, surfaces findings with attack-path context, and orchestrates remediation through a tiered approval workflow. This module contains the frontend — the Next.js dashboard plus the BFF (backend-for-frontend) layer that fronts the Go API.
 
 ## What's in this repository
 
@@ -56,8 +60,8 @@ Tricognita's design choices around the dashboard layer:
 ## Local development
 
 ```bash
-git clone https://github.com/tricognita/tricognita-frontend.git
-cd tricognita-frontend
+git clone https://github.com/tricognita/tricognita_web.git
+cd tricognita_web/frontend
 
 npm install
 cp .env.example .env.local

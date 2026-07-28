@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
-import { verifySession, sessionCookieName, type Role } from "@/lib/auth";
+import { verifySession, sessionCookieName } from "@/lib/auth";
 import { GO_API } from "@/lib/jit-secret";
 import { getJitToken } from "@/lib/jit-token";
-import { type Redis } from "@upstash/redis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

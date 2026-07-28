@@ -47,9 +47,24 @@ export async function revokeJti(jti: string, remainingTtlSeconds: number): Promi
 }
 
 /**
+ * revocationFailClosed reports whether revocation should fail CLOSED when Redis
+ * is unavailable. Default false (fail open — preserve availability and current
+ * behaviour). Set REVOCATION_FAIL_CLOSED=true to prefer security over
+ * availability: a token that cannot be checked is treated as revoked. Strict
+ * parse — only the exact string "true" enables it, so a typo can never silently
+ * weaken the control. See docs HARDENING_REGISTER H3.
+ */
+function revocationFailClosed(): boolean {
+  return process.env.REVOCATION_FAIL_CLOSED === "true";
+}
+
+/**
  * Returns true if the JTI has been revoked. Fast path: Redis GET.
- * On Redis failure, defaults to FALSE (access granted) — documented trade-off.
- * Flip to TRUE if you prefer security over availability.
+ * On Redis failure the result is governed by REVOCATION_FAIL_CLOSED:
+ *   - unset / not "true" (default): returns FALSE (fail open — token allowed
+ *     through, bounded by the 15-min access-token TTL). Preserves prior behaviour.
+ *   - "true": returns TRUE (fail closed — an un-checkable token is treated as
+ *     revoked and rejected). Prefers security over availability.
  */
 export async function isJtiRevoked(jti: string): Promise<boolean> {
   try {
@@ -57,7 +72,8 @@ export async function isJtiRevoked(jti: string): Promise<boolean> {
     const v = await r.get(`${JTI_PREFIX}${jti}`);
     return v === "1";
   } catch {
-    return false; // Redis down: allow through, log the anomaly
+    // Redis unavailable: fail open by default; fail closed when opted in.
+    return revocationFailClosed();
   }
 }
 

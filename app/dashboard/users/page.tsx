@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { useSession } from "@/lib/use-session";
 import { canDo } from "@/lib/rbac";
@@ -119,7 +119,12 @@ export default function UsersPage() {
                           <div className="inline-flex items-center gap-2">
                             <button onClick={() => setEditTarget(u)} className="px-2 py-1 text-xs rounded border border-sage-soft text-stone-300 hover:bg-matcha-300/10 hover:text-matcha-300 transition-colors cursor-dot">Edit</button>
                             <button onClick={() => setResetTarget(u)} className="px-2 py-1 text-xs rounded border border-sage-soft text-stone-300 hover:bg-amber-400/10 hover:text-amber-300 transition-colors cursor-dot">Reset PW</button>
-                            <button onClick={() => setDeleteTarget(u)} className="px-2 py-1 text-xs rounded border border-rose-800/40 text-rose-400 hover:bg-rose-900/20 transition-colors cursor-dot">Delete</button>
+                            <button
+                              onClick={() => setDeleteTarget(u)}
+                              disabled={u.email === myEmail}
+                              title={u.email === myEmail ? "You cannot delete your own account" : undefined}
+                              className="px-2 py-1 text-xs rounded border border-rose-800/40 text-rose-400 hover:bg-rose-900/20 transition-colors cursor-dot disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >Delete</button>
                           </div>
                         </td>
                       </>
@@ -350,8 +355,10 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
 function ConfirmModal({ title, body, danger, onCancel, onConfirm }: { title: string; body: React.ReactNode; danger?: boolean; onCancel: () => void; onConfirm: () => void }) {
   return (
     <Modal title={title} onClose={onCancel}>
-      <p className="text-sm text-stone-300 mb-6">{body}</p>
-      <ModalActions onCancel={onCancel} submitLabel="Confirm" danger={danger} />
+      <form onSubmit={(e) => { e.preventDefault(); onConfirm(); }}>
+        <p className="text-sm text-stone-300 mb-6">{body}</p>
+        <ModalActions onCancel={onCancel} submitLabel="Confirm" danger={danger} />
+      </form>
     </Modal>
   );
 }

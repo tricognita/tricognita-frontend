@@ -58,7 +58,8 @@ export default function RegisterPage() {
       <header className="border-b border-zinc-800/60">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-gradient-to-br from-violet-500 to-indigo-700 flex items-center justify-center text-xs font-bold text-white">T</span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
+            <img src="/brand/tricognita-mark.png" alt="Tricognita" width={24} height={24} style={{ width: 24, height: 24 }} />
             <span className="text-sm font-semibold tracking-tight">TRICOGNITA</span>
           </Link>
           <Link href="/login" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">

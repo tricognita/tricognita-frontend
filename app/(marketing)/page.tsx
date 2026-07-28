@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { FirstExperience, ExecutionProof, ConversionCTA } from "./components/ConversionSections";
+import { Hero } from "../components/site/Hero";
 
 // ─── Static Data ─────────────────────────────────────────────────────────────
 
@@ -40,103 +39,26 @@ const INCIDENTS = [
 ];
 
 const COMPARISON = [
-  { label: "Alerts generated per week",     them: "14,392",   us: "1"        },
-  { label: "Mean time to remediate",        them: "14 days",  us: "45 sec"   },
-  { label: "Human actions required",        them: "~200/day", us: "0"        },
-  { label: "Execution authority",           them: "None",     us: "Full"     },
-  { label: "Rollback capability",           them: "Manual",   us: "Instant"  },
+  { label: "End state",            them: "Alert queue",           us: "Remediation applied"       },
+  { label: "Response model",       them: "Human triage",          us: "Policy-bound execution"    },
+  { label: "Execution authority",  them: "Detect only",           us: "Scoped to your policy"     },
+  { label: "Rollback",             them: "Manual",                us: "Available on every action" },
+  { label: "Audit evidence",       them: "Assembled for audits",  us: "Signed continuously"       },
 ];
 
-const LOG_LINES = [
-  { t: "21:02:07", lvl: "TRACE",   color: "text-zinc-500",    msg: "ARIA DECISION TRACE · Input: IAM anomaly, privilege escalation · Risk: HIGH" },
-  { t: "21:02:09", lvl: "DETECT",  color: "text-rose-400",    msg: "CloudTrail: iam:AttachRolePolicy on role/ci-runner → AdministratorAccess" },
-  { t: "21:02:13", lvl: "REASON",  color: "text-cyan-400",    msg: "ARIA: blast radius scoped — 7 downstream resources match policy 'iam-no-admin-via-ci'" },
-  { t: "21:02:14", lvl: "SAFETY",  color: "text-emerald-400", msg: "EXECUTION MODE: AUTO (POLICY-BOUND) · BLAST RADIUS: non-prod only · FAIL-SAFE: ACTIVE · ROLLBACK: AVAILABLE" },
-  { t: "21:02:15", lvl: "PROPOSE", color: "text-violet-400",  msg: "Decision: restrict role + revert policy → arn:aws:iam::aws:policy/ReadOnlyAccess" },
-  { t: "21:02:19", lvl: "JIT",     color: "text-amber-400",   msg: "JIT authorization required. Awaiting cryptographic signature from secops@tricognita.com" },
-  { t: "21:02:44", lvl: "EXECUTE", color: "text-violet-400",  msg: "Approved. Executing policy revert on arn:aws:iam::123456789012:role/ci-runner" },
-  { t: "21:02:45", lvl: "RESOLVE", color: "text-emerald-400", msg: "SECURED. Threat neutralized. Audit hash: sha256:a3f9c2...d71e" },
-];
 
 const ONBOARDING = [
   { step: "01", time: "T+00m", label: "Connect AWS via CloudFormation",   detail: "Cross-account IAM role. Read-only by default." },
   { step: "02", time: "T+05m", label: "Agentless topology scan complete", detail: "All resources inventoried. No agents installed." },
   { step: "03", time: "T+12m", label: "Compliance baseline established",  detail: "SOC 2, ISO 27001, CERT-In gap analysis ready." },
-  { step: "04", time: "T+30m", label: "First remediation applied",        detail: "Critical finding detected and autonomously resolved." },
+  { step: "04", time: "T+30m", label: "First remediation applied",        detail: "Critical finding detected; remediation proposed and applied after human approval." },
 ];
-
-// ─── Hero Log Panel ───────────────────────────────────────────────────────────
-
-function LogPanel() {
-  const [visible, setVisible] = useState(0);
-  useEffect(() => {
-    if (visible >= LOG_LINES.length) return;
-    const t = setTimeout(() => setVisible((v) => v + 1), 900);
-    return () => clearTimeout(t);
-  }, [visible]);
-
-  return (
-    <div className="relative rounded border border-violet-900/50 bg-[#05070A] p-4 font-mono text-xs leading-6 min-h-[280px] shadow-[0_0_40px_rgba(124,58,237,0.07)]">
-      {/* Gradient accent line at top */}
-      <div aria-hidden className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/60 to-transparent rounded-t" />
-      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-zinc-800">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-zinc-500 uppercase tracking-widest text-[10px]">ARIA CONTROL PLANE — LIVE INCIDENT TRACE</span>
-        <span className="ml-auto text-[10px] text-zinc-700 font-mono">SIM</span>
-      </div>
-      {LOG_LINES.slice(0, visible).map((line, i) => (
-        <div key={i} className="flex gap-3">
-          <span className="text-zinc-600 flex-shrink-0">{line.t}</span>
-          <span className={`w-16 flex-shrink-0 font-bold ${line.color}`}>[{line.lvl}]</span>
-          <span className="text-zinc-300">{line.msg}</span>
-        </div>
-      ))}
-      {visible < LOG_LINES.length && (
-        <span className="text-zinc-600 animate-pulse">█</span>
-      )}
-    </div>
-  );
-}
-
-// ─── Terminal Feed ────────────────────────────────────────────────────────────
-
-const FEED = [
-  "Establishing OIDC tunnel to aws-account-prod... OK",
-  "Fetching IAM policies for 284 roles... OK",
-  "Cross-referencing against policy baseline... OK",
-  "Anomaly detected: role/ci-runner exceeds least-privilege threshold",
-  "ARIA engine engaged. Policy: deny over-privileged role assumption. Proceeding.",
-];
-
-function TerminalFeed() {
-  const [lines, setLines] = useState<string[]>([]);
-  const idx = useRef(0);
-  useEffect(() => {
-    const t = setInterval(() => {
-      if (idx.current < FEED.length) {
-        setLines((l) => [...l, FEED[idx.current++]]);
-      } else {
-        idx.current = 0;
-        setLines([]);
-      }
-    }, 1200);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <div className="font-mono text-[11px] text-zinc-500 space-y-1 p-4 rounded border border-zinc-800 bg-zinc-950">
-      {lines.map((l, i) => (
-        <div key={i}><span className="text-violet-600 mr-2">$</span>{l}</div>
-      ))}
-      <span className="text-zinc-700 animate-pulse">█</span>
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   return (
-    <div className="relative bg-[#05070A] text-zinc-100 overflow-hidden">
+    <div className="relative bg-bg text-fg overflow-hidden">
 
       {/* ── Global ambient glows ── */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10" style={{
@@ -153,66 +75,8 @@ export default function HomePage() {
         backgroundSize: "28px 28px"
       }} />
 
-      {/* ── 1. HERO ── */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-32 pb-24 grid lg:grid-cols-2 gap-16 items-start">
-        {/* Gradient top accent line */}
-        <div aria-hidden className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-        <div>
-          <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            SYSTEM ARMED — ARIA ENGINE ONLINE
-          </p>
-          {/* FIX D: Authority line */}
-          <p className="text-[11px] font-mono text-zinc-600 uppercase tracking-widest mb-5">
-            Built for environments where a single breach is unacceptable.
-          </p>
-          <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.04] mb-6">
-            Your Cloud Fixes Itself —{" "}<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">
-              Within Policy.
-            </span>
-          </h1>
-          <p className="text-zinc-400 text-lg leading-relaxed mb-4 max-w-lg">
-            Every action is constrained, audited, and reversible.
-            No alerts. No manual response. Just controlled remediation.
-          </p>
-          <p className="font-mono text-xs text-emerald-400 mb-8 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-            No action executes outside defined policy boundaries.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/dashboard" className="px-6 py-3 bg-violet-600 text-white font-semibold rounded text-sm hover:bg-violet-500 transition-colors">
-              Run Live Simulation
-            </Link>
-            <Link href="/contact" className="px-6 py-3 border border-zinc-700 text-zinc-300 font-semibold rounded text-sm hover:border-zinc-500 transition-colors">
-              Deploy in Your Environment →
-            </Link>
-          </div>
-          <div className="mt-8">
-            <TerminalFeed />
-          </div>
-        </div>
-        <div>
-          <LogPanel />
-          <p className="mt-2 font-mono text-[10px] text-zinc-600 uppercase tracking-widest text-center">
-            ILLUSTRATIVE — sample IAM incident from the simulator
-          </p>
-          <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { label: "Detection",       val: "< 12s",  c: "text-rose-400",    top: "from-rose-500/60 to-rose-700/40",       title: "Time from CloudTrail event to ARIA proposal in the simulator." },
-              { label: "Blast radius",    val: "Scoped", c: "text-cyan-400",    top: "from-cyan-500/60 to-cyan-700/40",       title: "Action constrained to non-prod only by the matched policy." },
-              { label: "Remediation",     val: "< 45s",  c: "text-emerald-400", top: "from-emerald-500/60 to-emerald-700/40", title: "Time from approval to execution in the simulator." },
-              { label: "Rollback",        val: "Ready",  c: "text-emerald-400", top: "from-violet-500/60 to-violet-700/40",   title: "Every action is recorded with an inverse — rollback is a click." },
-            ].map((s) => (
-              <div key={s.label} className="relative border border-zinc-800 rounded p-3 text-center overflow-hidden bg-zinc-950/60" title={s.title}>
-                <div aria-hidden className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${s.top}`} />
-                <div className={`font-mono text-xl font-bold ${s.c}`}>{s.val}</div>
-                <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── 1. HERO (2026 vertical slice) ── */}
+      <Hero />
 
       {/* ── Divider ── */}
       <div className="border-t border-zinc-900" />
@@ -232,37 +96,6 @@ export default function HomePage() {
               {s.text}
             </span>
           ))}
-        </div>
-      </div>
-
-      {/* ── EARLY ADOPTER: Dcubix ── */}
-      <div className="border-b border-zinc-900 bg-zinc-950/50">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-5 text-center">
-            Used by teams managing production infrastructure
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="https://dcubix.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-5 px-6 py-4 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-950 transition-all max-w-md w-full"
-            >
-              <div className="w-10 h-10 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:border-violet-800/60 transition-colors">
-                <span className="text-sm font-black text-violet-400">D</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">Dcubix</span>
-                  <span className="text-[10px] font-mono text-zinc-600 border border-zinc-800 px-1.5 py-0.5 rounded">EARLY ADOPTER</span>
-                </div>
-                <p className="text-[11px] text-zinc-500 mt-0.5 leading-snug">
-                  Development team deploying and managing client infrastructure across web and cloud environments.
-                </p>
-              </div>
-              <span className="text-zinc-700 group-hover:text-zinc-500 transition-colors text-xs">↗</span>
-            </a>
-          </div>
         </div>
       </div>
 
@@ -288,7 +121,7 @@ export default function HomePage() {
               ))}
             </div>
             <div className="mt-6 p-3 rounded bg-rose-950/30 border border-rose-900/40">
-              <p className="font-mono text-xs text-rose-400">STATUS: SOC OVERWHELMED — 200+ manual actions/day required</p>
+              <p className="font-mono text-xs text-rose-400">STATUS: DETECTION ONLY — remediation stays manual</p>
             </div>
           </div>
 
@@ -307,7 +140,7 @@ export default function HomePage() {
               ))}
             </div>
             <div className="mt-6 p-3 rounded bg-emerald-950/30 border border-emerald-900/40">
-              <p className="font-mono text-xs text-emerald-400">STATUS: SYSTEM ARMED — autonomous remediation active</p>
+              <p className="font-mono text-xs text-emerald-400">STATUS: DEFAULT-DENY — remediation executes only under human-approved policy</p>
             </div>
           </div>
         </div>
@@ -492,7 +325,8 @@ export default function HomePage() {
         <div className="rounded border border-zinc-800 bg-zinc-950 p-5 flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-8 h-8 rounded bg-violet-950/40 border border-violet-800/50 flex items-center justify-center">
-              <span className="text-violet-400 text-xs font-bold">T</span>
+              {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
+              <img src="/brand/tricognita-mark.png" alt="Tricognita" width={20} height={20} style={{ width: 20, height: 20 }} />
             </div>
             <div>
               <p className="text-xs font-bold text-white">Founder-led, AWS-native by background</p>
@@ -511,9 +345,9 @@ export default function HomePage() {
 
       {/* ── 4. REAL INCIDENTS ── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">AUTONOMOUS RESPONSE</p>
-        <h2 className="text-3xl font-bold text-white mb-2">Real threats. Deterministic outcomes.</h2>
-        <p className="text-zinc-500 mb-12 text-sm">Every incident below was detected and resolved without a human opening a ticket.</p>
+        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">POLICY-BOUND RESPONSE · SIMULATED</p>
+        <h2 className="text-3xl font-bold text-white mb-2">How ARIA responds. Deterministic by design.</h2>
+        <p className="text-zinc-500 mb-12 text-sm">Representative scenarios from a simulated environment — showing detection-to-remediation under policy. Not customer incident data.</p>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {INCIDENTS.map((inc) => (
@@ -573,9 +407,9 @@ export default function HomePage() {
 
       {/* ── 6. SOVEREIGN INFRA ── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">SOVEREIGN INFRASTRUCTURE</p>
-        <h2 className="text-3xl font-bold text-white mb-2">Data sovereignty engineered for India & the UAE.</h2>
-        <p className="text-zinc-500 mb-12 text-sm">Your telemetry never leaves your region. Built from the ground up for the strictest localized compliance requirements.</p>
+        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-3">DATA RESIDENCY</p>
+        <h2 className="text-3xl font-bold text-white mb-2">Your cloud resources stay in your cloud. We attest — we don't warehouse them.</h2>
+        <p className="text-zinc-500 mb-12 text-sm">Your raw cloud resources never leave your account — Tricognita reads them in place and does not warehouse your customer data. The posture findings and the tamper-evident audit chain the platform produces are stored in the Tricognita control plane, in the region you select. Supported control-plane regions for India and the Gulf are below.</p>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {[
@@ -589,7 +423,7 @@ export default function HomePage() {
                   <div key={n} className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span className="font-mono text-xs text-zinc-400">{n}</span>
-                    <span className="font-mono text-[10px] text-emerald-400 ml-auto">ACTIVE</span>
+                    <span className="font-mono text-[10px] text-emerald-400 ml-auto">SUPPORTED</span>
                   </div>
                 ))}
               </div>
@@ -605,7 +439,7 @@ export default function HomePage() {
         </div>
         <div className="mt-4 p-4 rounded border border-zinc-800 bg-zinc-950">
           <p className="font-mono text-xs text-zinc-500 text-center">
-            <span className="text-emerald-400 font-bold">GUARANTEE:</span> Customer telemetry, scan results, and remediation logs are processed exclusively within the customer&apos;s designated cloud region. Zero cross-border data transfer.
+            <span className="text-emerald-400 font-bold">RESIDENCY MODEL:</span> Your raw cloud resources stay in the customer&apos;s own account and designated region — Tricognita reads them in place and does not warehouse customer data. The posture findings and tamper-evident audit chain are stored in the Tricognita control plane, in the region you select. See the <a href="/architecture" className="text-emerald-400 underline underline-offset-2">architecture</a> page for the verifiable detail.
           </p>
         </div>
       </section>
@@ -652,7 +486,7 @@ export default function HomePage() {
           {[
             { val: "No alerts.",         sub: "ARIA classifies and acts. Your inbox stays clean." },
             { val: "No manual triage.",  sub: "The engine synthesizes the fix. No ticket required." },
-            { val: "No delayed response.",sub: "Detection to remediation in under 45 seconds." },
+            { val: "No delayed response.",sub: "Detection and remediation run as one closed loop — not a ticket queue." },
           ].map((o) => (
             <div key={o.val} className="rounded border border-zinc-800 p-6 bg-zinc-950 text-left relative overflow-hidden">
               <div aria-hidden className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />

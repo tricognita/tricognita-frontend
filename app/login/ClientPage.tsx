@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
+import { AUTH_INPUT, AUTH_INPUT_CENTER, AUTH_SUBMIT } from "@/app/components/ui/authStyles";
 
 // Allow only same-origin absolute paths. Blocks "//evil.com", "/\evil.com",
 // "http://…", and any other attempt to break out of the app origin.
@@ -79,7 +80,7 @@ function LoginForm() {
             required
             value={mfaCode}
             onChange={(e) => setMfaCode(e.target.value)}
-            className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2.5 text-center text-xl tracking-widest text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            className={AUTH_INPUT_CENTER}
             placeholder="000000"
           />
         </div>
@@ -91,7 +92,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading || mfaCode.length !== 6}
-          className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold bg-violet-600 text-white hover:bg-violet-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-60 disabled:cursor-not-allowed"
+          className={AUTH_SUBMIT}
         >
           {loading ? "Verifying…" : "Verify"}
         </button>
@@ -119,7 +120,7 @@ function LoginForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className={AUTH_INPUT}
           placeholder="you@company.com"
         />
       </div>
@@ -140,7 +141,7 @@ function LoginForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className={AUTH_INPUT}
           placeholder="••••••••"
         />
       </div>
@@ -154,7 +155,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold bg-violet-600 text-white hover:bg-violet-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-60 disabled:cursor-not-allowed"
+        className={AUTH_SUBMIT}
       >
         {loading ? "Authenticating…" : "Sign in to Tricognita"}
       </button>
@@ -175,7 +176,8 @@ export default function LoginPage() {
       <header className="border-b border-zinc-800/60">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <Link href="/" className="inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-violet-500 rounded">
-            <span className="w-6 h-6 rounded bg-gradient-to-br from-violet-500 to-indigo-700 flex items-center justify-center text-xs font-bold text-white">T</span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
+            <img src="/brand/tricognita-mark.png" alt="Tricognita" width={24} height={24} style={{ width: 24, height: 24 }} />
             <span className="text-sm font-semibold tracking-tight">TRICOGNITA</span>
           </Link>
         </div>
@@ -184,6 +186,15 @@ export default function LoginPage() {
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
+            <img
+              src="/brand/tricognita-mark.png"
+              alt="Tricognita"
+              width={64}
+              height={64}
+              className="mx-auto mb-5"
+              style={{ width: 64, height: 64 }}
+            />
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-violet-950/40 text-violet-300 ring-1 ring-violet-800/60 mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
               Secure Customer Portal

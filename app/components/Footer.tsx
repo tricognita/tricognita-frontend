@@ -62,10 +62,14 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
   {
     title: "Trust & Legal",
     links: [
-      { href: "/security", label: "Security" },
-      { href: "/privacy",  label: "Privacy Policy" },
-      { href: "/terms",    label: "Terms of Service" },
-      { href: "/dpa",      label: "Data Processing Agreement" },
+      { href: "/trust",        label: "Trust Center" },
+      { href: "/architecture", label: "Architecture" },
+      { href: "/security",     label: "Security" },
+      { href: "/status",       label: "Status & SLA" },
+      { href: "/faq",          label: "Procurement FAQ" },
+      { href: "/privacy",      label: "Privacy Policy" },
+      { href: "/terms",        label: "Terms of Service" },
+      { href: "/dpa",          label: "Data Processing Agreement" },
     ],
   },
 ];
@@ -82,9 +86,14 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div>
             <Link href="/" className="flex items-center gap-2 mb-3 cursor-dot">
-              <div className="flex items-center justify-center bg-matcha-600 text-white font-bold rounded" style={{ width: 24, height: 24, fontSize: 14 }}>
-                T
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
+              <img
+                src="/brand/tricognita-mark.png"
+                alt="Tricognita"
+                width={26}
+                height={26}
+                style={{ width: 26, height: 26 }}
+              />
               <span className="font-mono font-bold text-[14px] tracking-[0.1em] text-stone-50 uppercase">Tricognita</span>
             </Link>
             <p className="font-mono text-[13px] leading-relaxed text-stone-300 max-w-[220px]">

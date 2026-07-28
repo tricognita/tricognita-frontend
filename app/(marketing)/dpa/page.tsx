@@ -17,15 +17,13 @@ export default function DPAPage() {
           The Data Processor will process personal data solely on behalf of the Data Controller for the purpose of providing security monitoring, misconfiguration detection, and automated remediation (the "Services"). Processing will be limited strictly to the duration of the Master Agreement.
         </p>
 
-        <h2 className="text-lg font-semibold text-zinc-100 pt-4">2. Sovereign Data Residency</h2>
+        <h2 className="text-lg font-semibold text-zinc-100 pt-4">2. Data Residency (Control-Plane Architecture)</h2>
         <p>
-          To comply with national data sovereignty laws, data processing and storage shall strictly occur within the geographical region selected during tenant onboarding:
+          Tricognita operates on a control-plane architecture. Your raw cloud resources and configuration data remain within <strong>your own cloud account and the region you designate</strong>; the Tricognita control plane reads them in place to deliver the Services and does <strong>not</strong> warehouse your customer data. The posture findings, remediation logs, and tamper-evident audit chain that the Services generate are stored by the control plane on the sub-processors listed in Section 4, in the control-plane region recorded in your Order Form.
         </p>
-        <ul className="list-disc pl-5 space-y-2 mt-2">
-          <li><strong>India Deployments:</strong> Hosted entirely within AWS `ap-south-1` (Mumbai) in compliance with the DPDP Act.</li>
-          <li><strong>UAE / Saudi Arabia:</strong> Hosted entirely within AWS `me-south-1` (Bahrain) or `me-central-1` (UAE) to align with NESA and NCA frameworks.</li>
-          <li><strong>EU / UK:</strong> Hosted entirely within `eu-central-1` or `eu-west-2` complying with GDPR / UK-GDPR.</li>
-        </ul>
+        <p>
+          The control plane itself stores account metadata, operational state, and the tamper-evident audit chain on the sub-processors listed in Section 4. The control-plane processing region is selected during onboarding and recorded in your Order Form. Regional residency options aligned to the DPDP Act (India), NESA / NCA frameworks (UAE / Saudi Arabia), and GDPR / UK-GDPR (EU / UK) are available for enterprise and sovereign deployments and are confirmed contractually before provisioning.
+        </p>
 
         <h2 className="text-lg font-semibold text-zinc-100 pt-4">3. Security of Processing</h2>
         <p>
@@ -34,7 +32,7 @@ export default function DPAPage() {
 
         <h2 className="text-lg font-semibold text-zinc-100 pt-4">4. Sub-processors</h2>
         <p>
-          You provide general authorization for us to engage sub-processors to deliver the Service. Our current primary sub-processor is **Amazon Web Services (AWS)** for infrastructure hosting. We will notify you of any intended changes concerning the addition or replacement of sub-processors.
+          You provide general authorization for us to engage sub-processors to deliver the Service. Our current control-plane sub-processors are <strong>Vercel</strong> (application / BFF hosting), <strong>Fly.io</strong> (API compute), <strong>Neon</strong> (managed Postgres), and <strong>Upstash</strong> (managed Redis). Your own cloud provider account (e.g. AWS) — where your raw cloud resources and configuration data remain — is under your control, not ours. We will notify you of any intended changes concerning the addition or replacement of sub-processors.
         </p>
 
         <h2 className="text-lg font-semibold text-zinc-100 pt-4">5. Audit Rights</h2>

@@ -7,18 +7,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-interface DemoCred {
-  id: string;
-  provider: string;
-  label: string;
-  account_id: string;
-  role_arn: string;
-  regions: string[];
-  status: string;
-  last_scan_at: string;
-  created_at: string;
-}
-
 async function getSession() {
   const jar = await cookies();
   return verifySession(jar.get(sessionCookieName())?.value);
@@ -29,6 +17,7 @@ export async function GET(): Promise<Response> {
   if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
 
   const check = secretOrError();
+  if (check instanceof Response) return check;
   const token = await getJitToken({ sub: session.email, tenantId: session.tenantId, role: session.role });
 
   try {

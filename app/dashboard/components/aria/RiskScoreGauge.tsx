@@ -5,9 +5,6 @@ interface Props { score: number }
 export function RiskScoreGauge({ score }: Props) {
   const clamped = Math.max(0, Math.min(1, score));
   const cx = 80, cy = 80, r = 60;
-  const startAngle = Math.PI;
-  const endAngle = 0;
-  const totalAngle = Math.PI; // 180°
 
   function polar(angle: number) {
     return { x: cx + r * Math.cos(angle), y: cy - r * Math.sin(angle) };

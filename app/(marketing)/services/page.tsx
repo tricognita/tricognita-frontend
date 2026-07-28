@@ -219,7 +219,7 @@ export default function ServicesPage() {
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,rgba(124,58,237,0.08),transparent_60%)]" />
           <div className="relative">
             <p className="text-[10px] uppercase tracking-widest text-violet-400 font-mono mb-2">Stop waiting for the breach report.</p>
-            <h2 className="text-3xl font-bold text-white mb-2">Every day without autonomous defense<br />is a day attackers are ahead of you.</h2>
+            <h2 className="text-3xl font-bold text-white mb-2">Every day without continuous, policy-bound remediation<br />is a day attackers stay ahead of you.</h2>
             <p className="text-zinc-400 text-sm max-w-md">No agents. No disruption. Deploy in 30 minutes via cross-account IAM role. Your first findings report is delivered within 24 hours.</p>
           </div>
           <div className="relative flex flex-col gap-3 items-center flex-shrink-0">

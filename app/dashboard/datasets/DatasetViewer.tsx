@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Database, Download, Tag, Trash2, Shield, Activity, Search, Filter, CheckCircle2, Clock, ChevronDown } from "lucide-react";
+import { Database, Download, Tag, Trash2, Search, CheckCircle2, Clock, ChevronDown } from "lucide-react";
+import { ConfirmDangerous } from "@/lib/ui";
 
 type DatasetEvent = {
   id: string;
@@ -45,6 +46,7 @@ export default function DatasetViewer() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [labelInput, setLabelInput] = useState<Record<string, string>>({});
   const [clearing, setClearing] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const { data, isLoading, mutate } = useSWR<ApiResponse>(
     `/api/datasets?limit=500${typeFilter ? `&type=${typeFilter}` : ""}`,
@@ -76,15 +78,25 @@ export default function DatasetViewer() {
   }
 
   async function handleClear() {
-    if (!confirm("Delete ALL dataset events? This cannot be undone.")) return;
     setClearing(true);
     await fetch("/api/datasets", { method: "DELETE" });
     await mutate();
     setClearing(false);
+    setConfirmClear(false);
   }
 
   return (
     <div className="space-y-6">
+      <ConfirmDangerous
+        open={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={handleClear}
+        loading={clearing}
+        title="Delete ALL dataset events?"
+        description="This permanently removes every captured training/audit event from Redis and memory. This cannot be undone."
+        confirmLabel="Delete all events"
+      />
+
       {/* Storage Status */}
       {data?.storage && (
         <div className="grid grid-cols-3 gap-3">
@@ -159,7 +171,7 @@ export default function DatasetViewer() {
           Export CSV
         </a>
         <button
-          onClick={handleClear}
+          onClick={() => setConfirmClear(true)}
           disabled={clearing}
           className="flex items-center gap-2 px-3 py-2 bg-rose-950/40 hover:bg-rose-900/50 text-rose-400 rounded-lg text-xs font-semibold border border-rose-800/40 transition-colors disabled:opacity-50"
         >

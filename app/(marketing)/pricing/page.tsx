@@ -320,7 +320,7 @@ export default function PricingPage() {
               <p className="font-mono text-[10px] text-amber-600/80 mb-4">Pricing aligned to infrastructure scale and risk exposure.</p>
               <p className="text-zinc-400 text-sm leading-relaxed mb-6">UAE and Gulf deployments operate under distinct data sovereignty requirements. Pricing reflects the deployment architecture, compliance scope, and in-country processing requirements — not seat count.</p>
               {[
-                { tag: "DATA",       text: "All telemetry processed within UAE region. Zero cross-border transfer." },
+                { tag: "DATA",       text: "Your raw cloud resources stay in your own account and region; posture findings and the audit chain are stored on the Tricognita control plane, with in-region control-plane residency available for sovereign deployments." },
                 { tag: "COMPLIANCE", text: "NESA IA · DIFC Data Protection · Central Bank UAE aligned." },
                 { tag: "DEPLOYMENT", text: "Dedicated onboarding with a certified security architect." },
                 { tag: "SUPPORT",    text: "Gulf-timezone support. Arabic available on request." },
@@ -341,7 +341,7 @@ export default function PricingPage() {
               </div>
               <ul className="space-y-3">
                 {[
-                  { t: "In-country data processing (me-central-1 or customer VPC)", b: true },
+                  { t: "Raw cloud resources stay in your own account; posture findings and audit trail stored in-region on the Tricognita control plane", b: true },
                   { t: "Dedicated security architect onboarding (2-week)", b: true },
                   { t: "Observe Mode audit (14 days, read-only) before any execution", b: true },
                   { t: "Custom policy definition with your security team", b: false },

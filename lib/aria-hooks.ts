@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 import type { ARIAStatus, HealingModeState, RCAResult } from "./aria-types";
 
 const fetcher = async (url: string) => {

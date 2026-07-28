@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+/* Tricognita canonical design tokens (V1.0 SoT). Layer 1 → Layer 2. Everything
+   built from Phase 2 on consumes ONLY these roles. Imported before the legacy
+   system below, which is deprecated and removed as its consumers migrate. */
+@import "./styles/tokens/primitives.css";
+@import "./styles/tokens/semantic.css";
+
 /* ══════════════════════════════════════════════════════════════════════════════
-   Tricognita — Matcha / Botanical Cyber design system
-   Deep forest greens, crisp matcha accents, stone slate neutrals.
+   LEGACY — Matcha / Botanical Cyber design system  (DEPRECATED)
+   Kept only so live dashboard + the interim marketing slice keep building.
+   Do NOT consume these in new work; use the canonical roles above.
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -43,6 +50,29 @@
   --ember-glow: #FB7185;
   --amber-clay: #F59E0B;      /* Amber */
   --mist:       #38BDF8;      /* Sky */
+  --success:    #10B981;      /* Emerald 500 — canonical success (previously untokenized) */
+
+  /* ── 2026 semantic theme tokens (DARK defaults; light overrides below) ─────
+     One [data-theme] switch drives both themes — no duplicated component code. */
+  --bg:            #0B0914;
+  --bg-deep:       #05040A;
+  --surface:       rgba(255,255,255,0.032);   /* glass fill on dark */
+  --surface-solid: #120F22;
+  --surface-2:     #1A1533;
+  --hair:          rgba(255,255,255,0.08);    /* hairline border */
+  --hair-strong:   rgba(255,255,255,0.14);
+  --fg:            #F8F9FA;
+  --muted:         #A6A2BC;
+  --subtle:        #6B6884;
+  --primary:       #8B5CF6;                   /* brighter violet reads better on ink */
+  --primary-strong:#7C3AED;
+  --on-primary:    #FFFFFF;
+  --accent:        #C4B5FD;                   /* lavender */
+  --ring:          #8B5CF6;
+  --glow:          rgba(124,58,237,0.24);
+  --glow-2:        rgba(56,189,248,0.10);
+  --nav-bg:        rgba(11,9,20,0.55);
+  --mark-filter:   none;                      /* white mark shows as-is on dark */
 
   /* ── Rhythm ────────────────────────────────────────────── */
   --radius-sm:  6px;
@@ -68,6 +98,32 @@
   /* next/font sets --font-geist-sans / --font-geist-mono in layout.tsx */
   --font-sans:   var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono:   var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* ── LIGHT THEME — designed independently, not an inversion (Stripe/Anthropic-clean) ── */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg:            #FBFAF9;
+  --bg-deep:       #F4F1FB;
+  --surface:       rgba(255,255,255,0.70);
+  --surface-solid: #FFFFFF;
+  --surface-2:     #F6F3FF;
+  --hair:          #E9E6EF;
+  --hair-strong:   #D9D4E4;
+  --fg:            #14121C;
+  --muted:         #5A566B;
+  --subtle:        #857F98;
+  --primary:       #6D28D9;      /* darkened for AA on white */
+  --primary-strong:#5B21B6;
+  --on-primary:    #FFFFFF;
+  --accent:        #7C3AED;
+  --ring:          #6D28D9;
+  --glow:          rgba(124,58,237,0.13);
+  --glow-2:        rgba(56,189,248,0.07);
+  --nav-bg:        rgba(255,255,255,0.62);
+  --mark-filter:   invert(1);                 /* white mark → near-ink on light */
+  --background:    var(--bg);
+  --foreground:    var(--fg);
 }
 
 @theme inline {
@@ -103,9 +159,76 @@
   --color-amber-clay: var(--amber-clay);
   --color-mist:       var(--mist);
 
+  /* Canonical semantic tokens (P1). Additive + backward-compatible — the raw
+     matcha/ember/amber-clay/mist tokens above are unchanged. These map intent
+     to existing brand values (success is the newly-tokenized emerald-500).
+     Generates text-/bg-/border-/ring-{success,warning,error,info} utilities. */
+  --color-success:    var(--success);
+  --color-warning:    var(--amber-clay);
+  --color-error:      var(--ember);
+  --color-info:       var(--mist);
+
+  /* 2026 semantic theme aliases → bg-bg, text-fg, bg-surface, border-hair,
+     text-muted, text-primary/bg-primary, text-accent, text-on-primary */
+  --color-bg:         var(--bg);
+  --color-surface:    var(--surface-solid);
+  --color-surface2:   var(--surface-2);
+  --color-hair:       var(--hair);
+  --color-fg:         var(--fg);
+  --color-muted:      var(--muted);
+  --color-subtle:     var(--subtle);
+  --color-primary:    var(--primary);
+  --color-accent:     var(--accent);
+  --color-on-primary: var(--on-primary);
+
   --font-serif:       var(--font-serif);
   --font-sans:        var(--font-sans);
   --font-mono:        var(--font-mono);
+
+  /* ────────────────────────────────────────────────────────────────────────
+     CANONICAL ROLES → Tailwind utilities (Tricognita V1.0). Additive; theme-
+     aware via `inline` (values resolve to the [data-theme]-switched vars).
+     Generates: bg-substrate/panel, text-bone/bone-muted, border-graticule,
+     text-nominal/engaged/advisory/halt, bg-cognita-*, rounded-panel/curl,
+     shadow-panel/raised, font-display/text/mono-t.
+     ──────────────────────────────────────────────────────────────────────── */
+  --color-void:            var(--void);
+  --color-substrate:       var(--substrate);
+  --color-panel:           var(--panel);
+  --color-panel-raised:    var(--panel-raised);
+  --color-graticule:       var(--graticule);
+  --color-graticule-strong:var(--graticule-strong);
+
+  --color-bone:            var(--fg);
+  --color-bone-muted:      var(--fg-muted);
+  --color-bone-subtle:     var(--fg-subtle);
+  --color-on-state:        var(--on-state);
+
+  --color-nominal:         var(--state-nominal);
+  --color-nominal-strong:  var(--state-nominal-strong);
+  --color-engaged:         var(--state-engaged);
+  --color-engaged-strong:  var(--state-engaged-strong);
+  --color-advisory:        var(--state-advisory);
+  --color-advisory-strong: var(--state-advisory-strong);
+  --color-halt:            var(--state-halt);
+  --color-halt-strong:     var(--state-halt-strong);
+
+  --color-cognita-0:       var(--cognita-0);
+  --color-cognita-1:       var(--cognita-1);
+  --color-cognita-2:       var(--cognita-2);
+  --color-cognita-3:       var(--cognita-3);
+  --color-cognita-4:       var(--cognita-4);
+
+  --radius-panel:          var(--radius-panel);
+  --radius-curl:           var(--radius-curl);
+
+  --shadow-hair:           var(--elevation-hair);
+  --shadow-panel:          var(--elevation-panel);
+  --shadow-raised:         var(--elevation-raised);
+
+  --font-display:          var(--font-display);
+  --font-text:             var(--font-text);
+  --font-mono-t:           var(--font-mono);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -113,8 +236,8 @@
    ══════════════════════════════════════════════════════════════════════════════ */
 
 html, body {
-  background: var(--ink);
-  color: var(--stone-50);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "ss02", "cv01";
   -webkit-font-smoothing: antialiased;
@@ -123,15 +246,13 @@ html, body {
 }
 
 body {
-  background-color: var(--ink);
-  /* Subtle brand-tinted mesh — opacity reduced ~40% vs prior prototype tones
-     so charts/data carry the eye, not the background. */
-  background-image:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(124,58,237,0.09) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 95% 20%, rgba(139,92,246,0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 90% 60% at 50% 115%, rgba(76,29,149,0.09) 0%, transparent 60%);
-  background-attachment: fixed;
+  background-color: var(--bg);
   position: relative;
+}
+
+/* Smooth theme cross-fade for chrome surfaces (not motion-heavy; respects reduced-motion below) */
+html.theme-anim, html.theme-anim * {
+  transition: background-color .5s ease, border-color .5s ease, color .35s ease, fill .35s ease;
 }
 
 /* Film grain — SVG noise at overlay blend */
@@ -356,4 +477,99 @@ body > * { position: relative; z-index: 2; }
 @media (prefers-reduced-motion: reduce) {
   .rise-in, .rise-in-2, .rise-in-3, .rise-in-4, .rise-in-5 { animation: none; }
   * { transition-duration: .01s !important; animation-duration: .01s !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   2026 LANDING — vertical-slice utilities (nav / hero / evidence graph)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Grain: tactile depth without noise. ~2.5% on dark, ~1.8% on light. */
+.grain::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  opacity: .025; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+[data-theme="light"] .grain::after { opacity: .018; mix-blend-mode: multiply; }
+
+/* Glass chrome for the floating nav */
+.glass-nav {
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+          backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--hair);
+}
+
+/* Hero aura — one restrained bloom (no neon-everywhere) */
+.hero-aura {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+}
+.hero-aura::before {
+  content: ""; position: absolute; width: 900px; height: 620px;
+  top: -220px; left: 50%; transform: translateX(-30%);
+  background: radial-gradient(closest-side, var(--glow), transparent 72%);
+  filter: blur(8px);
+}
+.hero-aura::after {
+  content: ""; position: absolute; width: 640px; height: 520px;
+  bottom: -260px; left: -120px;
+  background: radial-gradient(closest-side, var(--glow-2), transparent 70%);
+}
+
+/* Fine dotted lattice — structure, very low contrast */
+.lattice-bg {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--fg) 26%, transparent) 1px, transparent 0);
+  background-size: 30px 30px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 82%);
+          mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 82%);
+  opacity: .5;
+}
+
+/* Brand gradient text — theme-aware, tasteful (not a rainbow) */
+.text-brand {
+  background: linear-gradient(105deg, var(--primary) 0%, var(--accent) 62%, var(--primary) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* Primary + ghost buttons (2026) */
+.btn-2026 {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 20px; border-radius: 10px;
+  font: 500 14px/1 var(--font-sans); letter-spacing: -0.01em;
+  transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .3s ease, background-color .2s ease, border-color .2s ease, filter .2s ease;
+  cursor: pointer; white-space: nowrap;
+}
+.btn-2026:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.btn-primary {
+  background: var(--primary-strong); color: var(--on-primary);
+  box-shadow: 0 1px 0 rgba(255,255,255,.16) inset, 0 10px 24px -12px var(--glow);
+}
+.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.07); box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 16px 34px -14px var(--glow); }
+.btn-primary:active { transform: translateY(0) scale(.99); }
+.btn-ghost {
+  background: color-mix(in oklab, var(--fg) 5%, transparent);
+  color: var(--fg); border: 1px solid var(--hair-strong);
+}
+.btn-ghost:hover { transform: translateY(-1px); border-color: var(--primary); color: var(--primary); }
+
+/* Staggered reveal for the hero (transform/opacity only) */
+@keyframes slice-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.sr { opacity: 0; animation: slice-rise .7s cubic-bezier(.22,1,.36,1) forwards; }
+.sr-1 { animation-delay: .05s; } .sr-2 { animation-delay: .13s; } .sr-3 { animation-delay: .21s; }
+.sr-4 { animation-delay: .29s; } .sr-5 { animation-delay: .37s; } .sr-6 { animation-delay: .45s; }
+
+/* Evidence-graph node pulse (drawn in SVG; this is the ambient breathing) */
+@keyframes node-breathe { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes edge-flow { to { stroke-dashoffset: -100; } }
+
+/* View-transition theme swap: circular reveal from the toggle */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2147483646; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sr { animation: none; opacity: 1; transform: none; }
+  .hero-aura::before, .hero-aura::after { filter: none; }
+  html.theme-anim, html.theme-anim * { transition-duration: .01s !important; }
+  ::view-transition-group(*), ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
 }

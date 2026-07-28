@@ -17,9 +17,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, isRoleAllowed, sessionCookieName } from "@/lib/auth";
-import type { Role } from "@/lib/auth";
+import { apiRequiredRoles } from "@/lib/api-authz";
 
 // ── Security headers added to every response ─────────────────────────────────
+//
+// NOTE: the primary security headers — including an enforcing
+// Content-Security-Policy, COOP, CORP, HSTS and Permissions-Policy — are set
+// site-wide in next.config.ts:headers(), which (unlike this middleware) applies
+// to ALL routes including the marketing pages. The duplicate subset below is a
+// defence-in-depth belt-and-braces for the middleware-matched routes.
 
 function sec(res: NextResponse): NextResponse {
   res.headers.set("X-Frame-Options", "DENY");
@@ -30,81 +36,6 @@ function sec(res: NextResponse): NextResponse {
     res.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   }
   return res;
-}
-
-// ── Route classification ──────────────────────────────────────────────────────
-
-// Public API paths — no auth required
-const PUBLIC_API = [
-  "/api/auth/login",
-  "/api/auth/register",
-  "/api/auth/logout",
-  "/api/auth/bootstrap-reset",
-  "/api/marketing/contact",
-  "/api/contact",
-  "/api/healthz",
-  "/api/leads",                 // marketing-site lead capture (rate-limited)
-];
-
-// API paths requiring ADMIN
-const ADMIN_API = [
-  "/api/auth/users",
-  "/api/aria/config/settings",
-  "/api/aria/config/healing-mode",
-  "/api/guard/policies",  // policy write operations
-  "/api/admin/feedback",  // cross-tenant feedback inbox (per-handler also checks)
-  "/api/admin/insights",  // product telemetry rollup (per-handler also checks)
-  "/api/admin/commercial",  // cross-tenant commercial view (per-handler also checks)
-  "/api/admin/demo-reset",  // demo-mode only; per-handler returns 404 outside demo
-  "/api/admin/leads",       // founder leads inbox (per-handler also checks)
-  "/api/admin/pilot-health",// per-tenant pilot health rollup (per-handler also checks)
-];
-
-// API paths requiring ADMIN or SECOPS
-const SECOPS_API = [
-  "/api/scan",
-  "/api/remediate",
-  "/api/aria/actions",
-  "/api/aria/stream",
-  "/api/aria/predictions",
-  "/api/aria/rca",
-  "/api/aria/zero-trust",
-  "/api/approvals",
-  "/api/aria/finops",
-  "/api/aria/ai-security",
-  "/api/guard/proxy",    // AI proxy forwarding
-  "/api/cloud/scan",
-  "/api/dspm/assets",
-  "/api/iac/scan",
-  "/api/threatintel/lookup",
-  "/api/k8s/audit",
-  "/api/credentials",
-];
-
-// API paths requiring ADMIN, SECOPS, or AUDITOR (read-only compliance)
-const AUDITOR_API = [
-  "/api/guard/stats",
-  "/api/guard/interactions",
-  "/api/guard/report",
-  "/api/audit-trail",
-  "/api/findings",
-  "/api/cloud/resources",
-  "/api/compliance/score",
-  "/api/compliance/controls",
-];
-
-function apiRequiredRoles(path: string): Role[] | "any" | "public" {
-  if (PUBLIC_API.some(p => path.startsWith(p)))   return "public";
-  if (ADMIN_API.some(p => path.startsWith(p)))    return ["ADMIN"];
-  // SECOPS_API contains state-changing and SECOPS-tier read paths. CLIENT
-  // and AUDITOR were previously in this list — they shouldn't be, because
-  // lib/rbac.ts triggerScan / triggerRemediate / viewCredentials / viewAria
-  // explicitly exclude both roles. Read-only access for CLIENT and
-  // AUDITOR is covered by AUDITOR_API (findings, compliance, etc.).
-  // This tightening closes the BFF↔rbac drift documented in lib/rbac.ts.
-  if (SECOPS_API.some(p => path.startsWith(p)))   return ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "RED_TEAMER", "FINOPS_ANALYST", "CLOUD_ENGINEER"];
-  if (AUDITOR_API.some(p => path.startsWith(p)))  return ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "VIEWER"];
-  return "any"; // authenticated, any role
 }
 
 // ── CSRF defense — same-origin guard for state-changing API requests ─────────
@@ -126,6 +57,22 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl;
   const isApi = pathname.startsWith("/api/");
   const isDashboard = pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+
+  // Internal design-validation pages (/dev/*) render component/mock scenarios,
+  // never customer data. They must not be reachable in production (QA F-WEB4).
+  if (pathname.startsWith("/dev")) {
+    if (process.env.NODE_ENV === "production") {
+      return sec(new NextResponse(null, { status: 404 }));
+    }
+    return sec(NextResponse.next());
+  }
+
+  // The Executive summary currently renders synthetic data. Disabled in
+  // production by default so customers are never shown fabricated board metrics;
+  // opt in for dev/demo via NEXT_PUBLIC_ENABLE_DEMO_EXECUTIVE=true.
+  if (pathname === "/dashboard/executive" && process.env.NEXT_PUBLIC_ENABLE_DEMO_EXECUTIVE !== "true") {
+    return sec(NextResponse.redirect(new URL("/dashboard", req.url)));
+  }
 
   // ── API routes ──────────────────────────────────────────────────────────────
   if (isApi) {
@@ -160,6 +107,19 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
           { status: 403 }
         ));
       }
+    }
+
+    // Fail closed: a route with no authorization policy is denied even to a
+    // valid session. This is the Batch 2.1 default-deny backstop — a new /api
+    // route that nobody classified will 403 here rather than silently allow.
+    if (required === "deny") {
+      return sec(NextResponse.json(
+        {
+          error: "forbidden",
+          message: "This resource has no authorization policy and is denied by default. Classify it in lib/api-authz.ts.",
+        },
+        { status: 403 }
+      ));
     }
 
     // Check role
@@ -230,6 +190,7 @@ export const config = {
     "/onboarding/:path*",
     "/onboarding",
     "/api/:path*",
+    "/dev/:path*",
     "/login",
     "/register",
   ],

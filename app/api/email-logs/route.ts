@@ -4,7 +4,7 @@ import { verifySession, sessionCookieName } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET() {
   const jar = await cookies();
   const sess = await verifySession(jar.get(sessionCookieName())?.value);
   if (!sess || (sess.role !== "ADMIN" && sess.role !== "SECOPS")) {

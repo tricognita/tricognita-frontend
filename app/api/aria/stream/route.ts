@@ -25,7 +25,7 @@ export async function GET(req: Request): Promise<Response> {
         "X-Accel-Buffering": "no",
       },
     });
-  } catch (err) {
+  } catch {
     console.warn(`[stream] Go API unreachable. Serving empty simulated stream.`);
     const stream = new ReadableStream({
       start(controller) {

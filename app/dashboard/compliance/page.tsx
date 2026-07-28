@@ -9,7 +9,6 @@ import {
   BadgeIntent,
   Button,
   Card,
-  CardHeader,
   EmptyState,
   ErrorState,
   HStack,
@@ -162,7 +161,6 @@ export default function CompliancePage() {
       return;
     }
     const d = new Date(effectiveScore.last_scan);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLastScanLabel(Number.isNaN(d.getTime()) ? null : d.toLocaleString());
   }, [effectiveScore?.last_scan]);
 

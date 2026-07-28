@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/tricognita/tricognita-frontend/security/advisories/new
+    url: https://github.com/tricognita/tricognita_web/security/advisories/new
     about: Report security issues privately. Do NOT use public issues.
   - name: Question or discussion
-    url: https://github.com/tricognita/tricognita-frontend/discussions
+    url: https://github.com/tricognita/tricognita_web/discussions
     about: For open-ended questions, use Discussions instead of an issue.

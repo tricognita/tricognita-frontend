@@ -1,0 +1,62 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   TRICOGNITA DESIGN TOKENS · LAYER 1 — PRIMITIVES
+   ------------------------------------------------------------------------------
+   Raw, context-free values. The private base of the system.
+
+   RULE: Components and primitives MUST NOT consume these directly. They are the
+   physical constants; the semantic layer (Layer 2) maps them to roles, and only
+   roles are consumed. Every name here is prefixed `--_` to signal "private".
+
+   Source of truth: TRICOGNITA_VISUAL_OS.md (System I "Telemetry" + Cognita
+   colormap) · DESIGN_LANGUAGE_SYSTEM.md §4 (8px grid) §6 (type) §7 (color).
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Graphite ramp — the console substrate (cool near-black) ───────────────── */
+  --_graphite-950: #08090B;   /* void — below-surface */
+  --_graphite-900: #0B0C0E;   /* canvas — the console */
+  --_graphite-850: #101216;
+  --_graphite-800: #131519;   /* instrument panel */
+  --_graphite-750: #191C21;   /* raised panel */
+  --_graphite-700: #20242B;   /* graticule / hairline */
+  --_graphite-600: #2A2F37;   /* hairline — strong */
+  --_graphite-500: #3A4049;
+
+  /* ── Bone — text on graphite (warm, not pure white) ───────────────────────── */
+  --_bone-100: #E9E7E1;       /* primary text */
+  --_bone-300: #B7B5AE;
+  --_bone-500: #9DA1A6;       /* secondary text — AA on graphite */
+  --_bone-700: #6A6E74;       /* tertiary — non-body / large only */
+
+  /* ── State grammar — color is state, never decoration (Visual OS System I) ─── */
+  /* nominal = proven · engaged = orchestrating · advisory = ARIA/caution · halt */
+  --_nominal-500: #4FB98C;  --_nominal-600: #3E9E77;  --_nominal-300: #7FD3AD;
+  --_engaged-500: #C36AA6;  --_engaged-600: #A9518C;  --_engaged-300: #D68CBE;
+  --_advisory-500: #E0A73B; --_advisory-600: #C08A24; --_advisory-300: #EDBE63;
+  --_halt-500: #E24A3B;     --_halt-600: #C23A2D;     --_halt-300: #EE7266;
+
+  /* ── Cognita colormap — perceptual ramp; color == evidence value ──────────── */
+  /* Used ONLY inside the Evidence Graph / data surfaces (Visual OS System II).  */
+  --_cognita-0: #161033;
+  --_cognita-1: #3B2E8C;
+  --_cognita-2: #B5477E;
+  --_cognita-3: #F0A860;
+  --_cognita-4: #E9E7E1;
+
+  /* ── Paper ramp — the light theme (designed, not an inversion) ────────────── */
+  --_paper-000: #FBFAF6;      /* raised on paper */
+  --_paper-100: #EDEBE4;      /* canvas */
+  --_paper-200: #F4F2EC;      /* panel */
+  --_paper-line: #D6D3C9;     /* graticule on paper */
+  --_paper-line-strong: #C3BFB2;
+
+  --_ink-900: #0B0C0E;        /* primary text on paper */
+  --_ink-500: #565A5E;        /* secondary — AA on paper */
+  --_ink-700: #7C8085;        /* tertiary */
+
+  /* State hues deepened for AA on paper (small-text safe). */
+  --_nominal-ink: #2E8F68;
+  --_engaged-ink: #A23C81;
+  --_advisory-ink: #916019;
+  --_halt-ink: #C0392B;
+}

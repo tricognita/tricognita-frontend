@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { verifySession, sessionCookieName, ROLES, type Role } from "@/lib/auth";
 import {
   updateRole, setStatus, sanitize, findByEmail, findById,
-  updateModules, updatePlan, deleteUser, adminResetPassword,
+  updateModules, updatePlan, deleteUser,
   type UserPlan,
 } from "@/lib/users";
 

@@ -201,6 +201,7 @@ export function NotificationCenter({ isCollapsed }: { isCollapsed?: boolean }) {
     let cancelled = false;
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
     let retryDelay = 1000;
+    const timers = toastTimers.current;
 
     function connect() {
       if (cancelled) return;
@@ -234,7 +235,7 @@ export function NotificationCenter({ isCollapsed }: { isCollapsed?: boolean }) {
       cancelled = true;
       es?.close();
       if (retryTimeout) clearTimeout(retryTimeout);
-      toastTimers.current.forEach(clearTimeout);
+      timers.forEach(clearTimeout);
     };
   }, [push]);
 
@@ -265,7 +266,7 @@ export function NotificationCenter({ isCollapsed }: { isCollapsed?: boolean }) {
             }
           }
         }
-      } catch (_) {}
+      } catch {}
     };
 
     poll();

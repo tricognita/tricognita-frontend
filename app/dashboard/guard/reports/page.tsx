@@ -5,9 +5,11 @@ import { useState } from "react";
 import jsPDF from "jspdf";
 export default function GuardReportsPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const downloadReport = async (type: string, format: "json" | "pdf") => {
     setLoading(`${type}-${format}`);
+    setError(null);
     try {
       const res = await fetch(`/api/guard/report/${type}`);
       if (!res.ok) throw new Error("Failed to generate report");
@@ -56,7 +58,7 @@ export default function GuardReportsPage() {
         doc.save(`tricognita_${type}_report_${new Date().toISOString().split('T')[0]}.pdf`);
       }
     } catch (err) {
-      alert("Error generating report: " + (err as Error).message);
+      setError((err as Error).message);
     } finally {
       setLoading(null);
     }
@@ -79,6 +81,13 @@ export default function GuardReportsPage() {
           <p className="text-sm text-zinc-400 mt-1 ml-8">Auto-generated audit evidence from AI interaction logs.</p>
         </div>
       </header>
+
+      {error && (
+        <div role="alert" className="flex items-center justify-between gap-4 rounded-lg border border-red-900/40 bg-red-950/20 px-4 py-3 text-sm text-red-300">
+          <span>Couldn&apos;t generate report: {error}</span>
+          <button onClick={() => setError(null)} aria-label="Dismiss error" className="text-red-400/70 hover:text-red-200 text-xl leading-none">&times;</button>
+        </div>
+      )}
 
       <main className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* EU AI Act */}

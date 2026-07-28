@@ -93,7 +93,12 @@ export default function GuardPoliciesPage() {
               </div>
             </div>
           ))}
-          {policies.length === 0 && (
+          {error && (
+            <div role="alert" className="p-8 text-center border border-red-900/40 rounded-lg bg-red-950/20 text-red-300 text-sm">
+              Couldn&apos;t load policies. Please refresh to retry.
+            </div>
+          )}
+          {!error && policies.length === 0 && (
             <div className="p-8 text-center border border-zinc-800 rounded-lg bg-zinc-900/20 text-zinc-500 text-sm">
               No policies configured.
             </div>

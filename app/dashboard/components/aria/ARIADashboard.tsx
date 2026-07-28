@@ -14,9 +14,9 @@ import { useARIAStream, useHealingMode, useRCALog } from "@/lib/aria-hooks";
 import { HealingMode } from "./HealingMode";
 import { IncidentDrawer } from "./IncidentDrawer";
 import { FinOpsAgent } from "./FinOpsAgent";
-import { Shield, Activity, Search, AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Activity, Search, AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { useSession } from "@/lib/use-session";
-import { canDo, swrKey } from "@/lib/rbac";
+import { canDo } from "@/lib/rbac";
 import { emitAuditEvent } from "@/lib/audit-events";
 
 const fetcher = async (url: string) => { const r = await fetch(url); if (!r.ok) throw new Error(String(r.status)); return r.json(); };
@@ -51,8 +51,9 @@ export function ARIADashboard() {
   const actionInFlight = useRef(new Set<string>());
 
   useEffect(() => {
+    const intervals = pollIntervals.current;
     return () => {
-      for (const id of pollIntervals.current.values()) clearInterval(id);
+      for (const id of intervals.values()) clearInterval(id);
     };
   }, []);
 
