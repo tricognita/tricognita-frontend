@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, isRoleAllowed, sessionCookieName } from "@/lib/auth";
 import type { Role } from "@/lib/auth";
+import { apiRequiredRoles } from "@/lib/api-authz";
 
 // ── Security headers added to every response ─────────────────────────────────
 
@@ -32,80 +33,8 @@ function sec(res: NextResponse): NextResponse {
   return res;
 }
 
-// ── Route classification ──────────────────────────────────────────────────────
-
-// Public API paths — no auth required
-const PUBLIC_API = [
-  "/api/auth/login",
-  "/api/auth/register",
-  "/api/auth/logout",
-  "/api/auth/bootstrap-reset",
-  "/api/marketing/contact",
-  "/api/contact",
-  "/api/healthz",
-  "/api/leads",                 // marketing-site lead capture (rate-limited)
-];
-
-// API paths requiring ADMIN
-const ADMIN_API = [
-  "/api/auth/users",
-  "/api/aria/config/settings",
-  "/api/aria/config/healing-mode",
-  "/api/guard/policies",  // policy write operations
-  "/api/admin/feedback",  // cross-tenant feedback inbox (per-handler also checks)
-  "/api/admin/insights",  // product telemetry rollup (per-handler also checks)
-  "/api/admin/commercial",  // cross-tenant commercial view (per-handler also checks)
-  "/api/admin/demo-reset",  // demo-mode only; per-handler returns 404 outside demo
-  "/api/admin/leads",       // founder leads inbox (per-handler also checks)
-  "/api/admin/pilot-health",// per-tenant pilot health rollup (per-handler also checks)
-];
-
-// API paths requiring ADMIN or SECOPS
-const SECOPS_API = [
-  "/api/scan",
-  "/api/remediate",
-  "/api/aria/actions",
-  "/api/aria/stream",
-  "/api/aria/predictions",
-  "/api/aria/rca",
-  "/api/aria/zero-trust",
-  "/api/approvals",
-  "/api/aria/finops",
-  "/api/aria/ai-security",
-  "/api/guard/proxy",    // AI proxy forwarding
-  "/api/cloud/scan",
-  "/api/dspm/assets",
-  "/api/iac/scan",
-  "/api/threatintel/lookup",
-  "/api/k8s/audit",
-  "/api/credentials",
-];
-
-// API paths requiring ADMIN, SECOPS, or AUDITOR (read-only compliance)
-const AUDITOR_API = [
-  "/api/guard/stats",
-  "/api/guard/interactions",
-  "/api/guard/report",
-  "/api/audit-trail",
-  "/api/findings",
-  "/api/cloud/resources",
-  "/api/compliance/score",
-  "/api/compliance/controls",
-];
-
-function apiRequiredRoles(path: string): Role[] | "any" | "public" {
-  if (PUBLIC_API.some(p => path.startsWith(p)))   return "public";
-  if (ADMIN_API.some(p => path.startsWith(p)))    return ["ADMIN"];
-  // SECOPS_API contains state-changing and SECOPS-tier read paths. CLIENT
-  // and AUDITOR were previously in this list — they shouldn't be, because
-  // lib/rbac.ts triggerScan / triggerRemediate / viewCredentials / viewAria
-  // explicitly exclude both roles. Read-only access for CLIENT and
-  // AUDITOR is covered by AUDITOR_API (findings, compliance, etc.).
-  // This tightening closes the BFF↔rbac drift documented in lib/rbac.ts.
-  if (SECOPS_API.some(p => path.startsWith(p)))   return ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "RED_TEAMER", "FINOPS_ANALYST", "CLOUD_ENGINEER"];
-  if (AUDITOR_API.some(p => path.startsWith(p)))  return ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "VIEWER"];
-  return "any"; // authenticated, any role
-}
+// Route classification lives in lib/api-authz.ts so the RBAC contract test
+// can import it without the server runtime. See that file for the rationale.
 
 // ── CSRF defense — same-origin guard for state-changing API requests ─────────
 const ALLOWED_ORIGINS = new Set<string>([
