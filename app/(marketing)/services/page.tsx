@@ -1,237 +1,449 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { CardGrid, CtaBand, PageHero, Section } from "../../components/marketing/Blocks";
+import { AriaStatus } from "../../components/marketing/AriaStatus";
+import { CapabilityBadge, StateBadge, StateLegend } from "../../components/marketing/CapabilityBadge";
+import {
+  capabilityById,
+  CLOUDS,
+  PRODUCT_DESCRIPTOR,
+  PRODUCT_DISPLAY_NAME,
+  publicCapabilities,
+  SERVICES,
+  type Capability,
+} from "@/lib/marketing/capabilities";
+import { ariaSupportsService } from "@/lib/marketing/aria";
+import { MARKETS } from "@/lib/marketing/company";
+import { isServicePage, servicePageHref } from "@/lib/marketing/service-details";
+import { CHOOSER, SERVICE_DETAILS, serviceCta, serviceGroup } from "@/lib/marketing/services";
+import { PLATFORM_HREF, SCOPING_CALL_HREF } from "@/lib/marketing/site";
 
-// Services with client pain points — the "slight anger" hook
-const SERVICES = [
+// Plan: docs/02_Company/Marketing/TRICOGNITA_WEBSITE_REBUILD_PLAN.md Rev B.1
+// §17 and Rev A §18. Names and states come from lib/marketing/capabilities.ts;
+// service detail and the state-driven call to action from lib/marketing/services.ts.
+export const metadata: Metadata = {
+  title: "Cloud Security Services",
+  description: `Cloud security assessment, remediation and hardening, security retainers and engineering on AWS and Microsoft Azure, supported by ${PRODUCT_DISPLAY_NAME}. For teams in India and the UAE.`,
+  alternates: { canonical: "/services" },
+};
+
+const SCOPING_CTA = { href: SCOPING_CALL_HREF, label: "Book a scoping call" };
+const PRODUCT_CTA = { href: PLATFORM_HREF, label: `See ${PRODUCT_DISPLAY_NAME}` };
+
+const detail = (c: Capability) => SERVICE_DETAILS[c.id];
+
+function Dashes({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((it) => (
+        <li key={it} className="flex gap-2">
+          <span aria-hidden="true">–</span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted">{label}</p>
+      <div className="mt-1.5 text-sm leading-relaxed text-fg">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * A state-driven call to action: booking only for Available services. Core
+ * services get a button; supporting and specialist services a quieter link.
+ */
+function ServiceCta({ service, variant = "button" }: { service: Capability; variant?: "button" | "link" }) {
+  const cta = serviceCta(service);
+  if (!cta) return null;
+  if (variant === "link") {
+    return (
+      <Link href={cta.href} className="whitespace-nowrap text-sm font-medium text-accent underline-offset-4 hover:underline">
+        {cta.label} <span aria-hidden="true">→</span>
+      </Link>
+    );
+  }
+  return (
+    <Link href={cta.href} className={cta.label === "Book a scoping call" ? "btn-2026 btn-primary" : "btn-2026 btn-ghost"}>
+      {cta.label}
+    </Link>
+  );
+}
+
+/**
+ * How ARIA relates to a service: the service's own note and ARIA's
+ * product-level state. Per-capability states stay on /product.
+ */
+function AriaSupport({ service }: { service: Capability }) {
+  const d = detail(service);
+  return (
+    <div className="rounded-xl border border-hair bg-surface2 p-4">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted">How {PRODUCT_DISPLAY_NAME} supports this</p>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted">{d.ariaNote}</p>
+      {ariaSupportsService(service.id) && (
+        <p className="mt-3">
+          <AriaStatus />
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** A service's name, linked to its detail page where one exists. */
+function ServiceName({ service }: { service: Capability }) {
+  if (!isServicePage(service.id)) return <>{service.name}</>;
+  return (
+    <Link href={servicePageHref(service.id)} className="underline-offset-4 hover:underline">
+      {service.name}
+    </Link>
+  );
+}
+
+function PrimaryService({ service }: { service: Capability }) {
+  const d = detail(service);
+  return (
+    <article
+      id={service.id}
+      aria-labelledby={`${service.id}-name`}
+      className="scroll-mt-24 rounded-2xl border border-hair bg-surface p-6 sm:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h3 id={`${service.id}-name`} className="text-xl font-semibold text-fg">
+          <ServiceName service={service} />
+        </h3>
+        <CapabilityBadge capability={service} />
+      </div>
+      <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted">{service.summary}</p>
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="space-y-5">
+          <Field label="Who it is for">{d.audience}</Field>
+          <Field label="Common triggers">
+            <Dashes items={d.triggers} />
+          </Field>
+          <Field label="Scope">
+            <Dashes items={d.scope} />
+          </Field>
+        </div>
+        <div className="space-y-5">
+          <Field label="What we do">{d.work}</Field>
+          <Field label="What you receive">
+            <Dashes items={d.receives} />
+          </Field>
+          <AriaSupport service={service} />
+        </div>
+      </div>
+      <div className="mt-6">
+        <ServiceCta service={service} />
+      </div>
+    </article>
+  );
+}
+
+function SupportingService({ service }: { service: Capability }) {
+  const d = detail(service);
+  return (
+    <li id={service.id} className="flex scroll-mt-24 flex-col rounded-2xl border border-hair bg-surface p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h3 className="text-base font-semibold text-fg">
+          <ServiceName service={service} />
+        </h3>
+        <CapabilityBadge capability={service} />
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{service.summary}</p>
+      <div className="mt-4 flex-1 space-y-3">
+        <Field label="Who it is for">{d.audience}</Field>
+        <Field label="You receive">{d.receives.join(" · ")}</Field>
+        <p className="text-xs leading-relaxed text-muted">
+          {PRODUCT_DISPLAY_NAME}: {d.ariaNote}
+        </p>
+      </div>
+      <div className="mt-5">
+        <ServiceCta service={service} variant="link" />
+      </div>
+    </li>
+  );
+}
+
+const MODEL = [
   {
-    category: "Cloud Hardening & Governance",
-    hook: "Your IAM is a liability you haven't found yet.",
-    accent: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.12)",
-    borderHover: "hover:border-violet-500/40",
-    accentText: "text-violet-400",
-    items: [
-      "AWS Well-Architected Security Review",
-      "IAM Least-Privilege & Access Hardening",
-      "VPC & Network Security Architecture",
-      "Security Monitoring Stack Deployment",
-      "Automated Vulnerability Scanning",
-    ],
-    stat: { val: "68%", label: "of breaches start with over-privileged IAM" },
+    stage: "Test",
+    services: "Assessments and security testing",
+    aria: "Control evaluation from read-only access",
   },
   {
-    category: "Offensive Security — Red Team",
-    hook: "If we can breach you, so can they.",
-    accent: "from-rose-500 to-red-600",
-    glow: "rgba(244,63,94,0.12)",
-    borderHover: "hover:border-rose-500/40",
-    accentText: "text-rose-400",
-    items: [
-      "Multi-Cloud Adversary Emulation",
-      "Internal & External Web App Pentesting",
-      "Cloud Infrastructure Breach Simulation",
-      "Red Team Operations & Target Recon",
-    ],
-    stat: { val: "< 2h", label: "avg time to first critical finding in new environments" },
+    stage: "Fix",
+    services: "Remediation, hardening and secure engineering",
+    aria: "Bounded, approved fixes for supported controls, and tracking for the rest",
   },
   {
-    category: "DevSecOps & Supply Chain",
-    hook: "Your pipeline ships code. And vulnerabilities.",
-    accent: "from-cyan-500 to-blue-600",
-    glow: "rgba(6,182,212,0.12)",
-    borderHover: "hover:border-cyan-500/40",
-    accentText: "text-cyan-400",
-    items: [
-      "CI/CD Pipeline Security & Automation",
-      "SBOM (Software Bill of Materials) Management",
-      "Secure Software Supply Chain Audits",
-      "IaC (Infrastructure as Code) Drift Detection",
-    ],
-    stat: { val: "91%", label: "of companies ship undetected secrets in their pipelines" },
+    stage: "Verify",
+    services: "Retesting and verification of every fix",
+    aria: "The same check re-run on the same resource",
   },
   {
-    category: "Advanced Infrastructure",
-    hook: "Kubernetes is powerful. And dangerously misconfigured.",
-    accent: "from-emerald-500 to-teal-600",
-    glow: "rgba(16,185,129,0.12)",
-    borderHover: "hover:border-emerald-500/40",
-    accentText: "text-emerald-400",
-    items: [
-      "Kubernetes (EKS/AKS/GKE) Hardening",
-      "Generative AI & LLM Security Audits",
-      "Edge, IoT & Greengrass Security",
-      "Post-Quantum Cryptography Assessment",
-    ],
-    stat: { val: "60%", label: "of K8s clusters have at least one critical exposure" },
-  },
-  {
-    category: "Managed Defense — MDR/IR",
-    hook: "Alerts at 2am don't wake up your SOC fast enough.",
-    accent: "from-amber-500 to-orange-600",
-    glow: "rgba(245,158,11,0.12)",
-    borderHover: "hover:border-amber-500/40",
-    accentText: "text-amber-400",
-    items: [
-      "24/7 Managed Detection & Response",
-      "Incident Response & Forensic Recovery",
-      "Ransomware Resilience-as-a-Service",
-      "Zero Trust Architecture Implementation",
-    ],
-    stat: { val: "14 days", label: "avg dwell time before breach detection — industry average" },
-  },
-  {
-    category: "Compliance & FinOps",
-    hook: "Compliance-as-a-checkbox is how audits become nightmares.",
-    accent: "from-indigo-500 to-violet-600",
-    glow: "rgba(99,102,241,0.12)",
-    borderHover: "hover:border-indigo-500/40",
-    accentText: "text-indigo-400",
-    items: [
-      "Compliance-as-a-Service (SOC2 / PCI-DSS)",
-      "Multi-Cloud FinOps & Governance",
-      "Security ROI & Cost Optimization",
-      "Cyber-Resilience Strategy Consulting",
-    ],
-    stat: { val: "$4.2M", label: "avg cost of a data breach — IBM 2024" },
-  },
-  {
-    category: "Elite Cloud Engineering",
-    hook: "Secure-by-design isn't a feature. It's the foundation.",
-    accent: "from-pink-500 to-rose-600",
-    glow: "rgba(236,72,153,0.12)",
-    borderHover: "hover:border-pink-500/40",
-    accentText: "text-pink-400",
-    items: [
-      "Secure Fullstack App Development",
-      "Custom Enterprise Software on AWS",
-      "High-Performance Landing Page Engineering",
-      "Application Maintenance & Hands-on Support",
-    ],
-    stat: { val: "By design", label: "security baked into the architecture, not bolted on at the end" },
+    stage: "Keep secure",
+    services: "Retainers and recurring review",
+    aria: "Scheduled re-checks, drift detection and records",
   },
 ];
 
 export default function ServicesPage() {
+  const services = publicCapabilities(SERVICES);
+  const primary = services.filter((s) => serviceGroup(s) === "primary");
+  const supporting = services.filter((s) => serviceGroup(s) === "supporting");
+  const specialist = services.filter((s) => serviceGroup(s) === "specialist");
+
   return (
-    <div className="relative overflow-hidden">
-      {/* Ambient glows */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10" style={{
-        background: [
-          "radial-gradient(ellipse 900px 600px at 75% 0%, rgba(124,58,237,0.07), transparent 60%)",
-          "radial-gradient(ellipse 600px 400px at 10% 60%, rgba(6,182,212,0.05), transparent 60%)",
-        ].join(",")
-      }} />
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 opacity-[0.025]" style={{
-        backgroundImage: "radial-gradient(circle, #a1a1aa 1px, transparent 1px)",
-        backgroundSize: "28px 28px"
-      }} />
+    <>
+      {/* 1. Hero */}
+      <PageHero
+        eyebrow="Cloud Security Services"
+        title="Find the problem. Fix it. Verify the result."
+        sub={
+          <>
+            Hands-on security engineering for AWS and Microsoft Azure, with Google Cloud launching. We do not stop at an
+            assessment: we fix what we find with your team and verify every fix, supported by {PRODUCT_DISPLAY_NAME}.
+          </>
+        }
+        primary={SCOPING_CTA}
+        secondary={{ href: "#choose", label: "Which service do I need?" }}
+        note="Serving India and the United Arab Emirates · A written scope before any work starts"
+      />
 
-      {/* ── Hero ── */}
-      <section className="relative pt-32 pb-20 text-center">
-        <div aria-hidden className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
-        <div className="max-w-4xl mx-auto px-6">
-          <p className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-            The threat is already inside your perimeter
-          </p>
-          <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight leading-[1.05] mb-6">
-            25 Services Built to Fix<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">
-              What You Haven&apos;t Discovered Yet.
-            </span>
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed mb-8">
-            Most security teams find out about breaches from attackers, not their tools.
-            Tricognita detects, reasons, and fixes — before that call comes.
-          </p>
-
-          {/* Trust strip */}
-          <div className="flex flex-wrap justify-center gap-4">
-            {["Agentless", "Policy-Bound Execution", "SOC 2 Type II", "India & UAE Coverage", "Zero Alert Fatigue"].map((t) => (
-              <span key={t} className="px-3 py-1.5 rounded border border-zinc-800 bg-zinc-950 text-xs text-zinc-400 font-mono">
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats Bar (platform invariants, not contracted SLAs) ── */}
-      <div className="border-y border-zinc-900 bg-zinc-950/80">
-        <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { val: "25+",      label: "Specialized Services"  },
-            { val: "Read-only", label: "Default Access Mode"  },
-            { val: "Tenant",   label: "Isolated Execution"    },
-            { val: "0",        label: "Agents Required"       },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-mono text-2xl font-bold text-violet-400">{s.val}</div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Service Cards ── */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {SERVICES.map((svc) => (
-            <div
-              key={svc.category}
-              className={`group relative flex flex-col p-7 rounded border border-zinc-800 ${svc.borderHover} bg-zinc-950 transition-all duration-300 overflow-hidden`}
-              style={{ boxShadow: `inset 0 0 40px ${svc.glow}` }}
-            >
-              {/* Gradient top line */}
-              <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${svc.accent} opacity-60 group-hover:opacity-100 transition-opacity`} />
-
-              {/* Hook — emotional angle */}
-              <p className={`text-[10px] font-mono uppercase tracking-widest ${svc.accentText} mb-3`}>
-                {svc.hook}
+      {/* 2. Delivery model */}
+      <Section
+        id="model"
+        eyebrow="How we deliver"
+        title="Test → Fix → Verify → Keep secure"
+        intro={<p>Every service sits somewhere in this loop, and most engagements move through more than one step.</p>}
+      >
+        <ol className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {MODEL.map((m, i) => (
+            <li key={m.stage} className="flex flex-col rounded-2xl border border-hair bg-surface p-6">
+              <p className="font-mono text-xs text-muted">0{i + 1}</p>
+              <h3 className="mt-1 text-lg font-semibold text-fg">{m.stage}</h3>
+              <p className="mt-3 text-xs font-medium uppercase tracking-wider text-muted">Services</p>
+              <p className="mt-1 text-sm leading-relaxed text-fg">{m.services}</p>
+              <p className="mt-3 border-t border-hair pt-3 text-xs font-medium uppercase tracking-wider text-muted">
+                {PRODUCT_DISPLAY_NAME}
               </p>
+              <p className="mt-1 text-sm leading-relaxed text-muted">{m.aria}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
 
-              <h2 className="text-[16px] font-bold text-white mb-5">{svc.category}</h2>
-
-              <ul className="space-y-2.5 flex-1">
-                {svc.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                    <span className={`mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-gradient-to-br ${svc.accent}`} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              {/* Stat — the anger hook */}
-              <div className="mt-6 pt-5 border-t border-zinc-900">
-                <div className={`font-mono text-xl font-bold ${svc.accentText}`}>{svc.stat.val}</div>
-                <div className="text-[10px] text-zinc-600 mt-1 leading-relaxed">{svc.stat.label}</div>
-              </div>
-            </div>
+      {/* 3–7. Primary services */}
+      <Section
+        id="primary"
+        tone="raised"
+        eyebrow="Core services"
+        title="Where most engagements start"
+        intro={<p>Each service shows its current state. Only available services can be booked.</p>}
+      >
+        <StateLegend />
+        <div className="mt-6 space-y-6">
+          {primary.map((s) => (
+            <PrimaryService key={s.id} service={s} />
           ))}
         </div>
+      </Section>
 
-        {/* CTA Banner */}
-        <div
-          className="mt-8 relative overflow-hidden rounded border p-12 flex flex-col md:flex-row items-center justify-between gap-8"
-          style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(6,182,212,0.06) 100%)", borderColor: "rgba(124,58,237,0.3)" }}
-        >
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,rgba(124,58,237,0.08),transparent_60%)]" />
-          <div className="relative">
-            <p className="text-[10px] uppercase tracking-widest text-violet-400 font-mono mb-2">Stop waiting for the breach report.</p>
-            <h2 className="text-3xl font-bold text-white mb-2">Every day without continuous, policy-bound remediation<br />is a day attackers stay ahead of you.</h2>
-            <p className="text-zinc-400 text-sm max-w-md">No agents. No disruption. Deploy in 30 minutes via cross-account IAM role. Your first findings report is delivered within 24 hours.</p>
+      {/* 8. Supporting services */}
+      <Section
+        id="supporting"
+        eyebrow="Supporting services"
+        title="Engineering that extends the core work"
+        intro={<p>Often added to an assessment, remediation or retainer, or bought on their own for a specific need.</p>}
+      >
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {supporting.map((s) => (
+            <SupportingService key={s.id} service={s} />
+          ))}
+        </ul>
+      </Section>
+
+      {/* 9. Specialist services */}
+      <Section
+        id="specialist"
+        tone="raised"
+        eyebrow="Specialist services"
+        title="Launching and planned"
+        intro={<p>Launching services are being prepared: register your interest. Planned services are on our roadmap.</p>}
+      >
+        <ul className="rounded-2xl border border-hair bg-surface px-5 sm:px-6">
+          {specialist.map((s) => (
+            <li
+              key={s.id}
+              id={s.id}
+              className="flex scroll-mt-24 flex-col gap-3 border-b border-hair py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-fg">
+                  <ServiceName service={s} />
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{s.summary}</p>
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-3">
+                <CapabilityBadge capability={s} />
+                <ServiceCta service={s} variant="link" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {/* 10–11. Services and ARIA */}
+      <Section
+        id="aria"
+        eyebrow={`Services + ${PRODUCT_DISPLAY_NAME}`}
+        title="How services and the product work together"
+        intro={
+          <p>
+            {PRODUCT_DISPLAY_NAME} is our product for {PRODUCT_DESCRIPTOR.toLowerCase()}. It makes the repeatable parts of
+            an engagement consistent; our engineers handle the rest.
+          </p>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-hair bg-surface p-6">
+            <h3 className="text-base font-semibold text-fg">Service → {PRODUCT_DISPLAY_NAME}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              An engagement can use {PRODUCT_DISPLAY_NAME} for repeatable control evaluation, fix tracking and
+              verification. When the engagement ends, you can keep verifying with {PRODUCT_DISPLAY_NAME}, if that suits
+              you.
+            </p>
           </div>
-          <div className="relative flex flex-col gap-3 items-center flex-shrink-0">
-            <Link href="/contact" className="px-8 py-4 bg-violet-600 text-white font-bold rounded text-sm hover:bg-violet-500 transition-colors whitespace-nowrap">
-              Talk to a Security Architect
-            </Link>
-            <Link href="/dashboard" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-              Run live simulation →
-            </Link>
+          <div className="rounded-2xl border border-hair bg-surface p-6">
+            <h3 className="text-base font-semibold text-fg">{PRODUCT_DISPLAY_NAME} → Service</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              {PRODUCT_DISPLAY_NAME} customers can bring us in for testing, complex remediation, architecture work,
+              readiness or ongoing engineering. You do not need services to use the product.
+            </p>
           </div>
         </div>
-      </section>
-    </div>
+        <p className="mt-6 text-sm">
+          <Link href={PLATFORM_HREF} className="font-medium text-accent underline-offset-4 hover:underline">
+            How {PRODUCT_DISPLAY_NAME} works <span aria-hidden="true">→</span>
+          </Link>
+        </p>
+      </Section>
+
+      {/* 12. How to choose */}
+      <Section id="choose" tone="raised" eyebrow="How to choose" title="Start from what you need">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {CHOOSER.map((c) => {
+            const s = capabilityById(c.serviceId);
+            if (!s) return null;
+            return (
+              <li key={c.need}>
+                <a
+                  href={`#${s.id}`}
+                  className="flex h-full items-center justify-between gap-3 rounded-xl border border-hair bg-surface p-4 hover:bg-surface2"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm text-muted">“{c.need}”</span>
+                    <span className="mt-1 block text-sm font-semibold text-fg">{s.name}</span>
+                  </span>
+                  <CapabilityBadge capability={s} />
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+
+      {/* 13. Clouds */}
+      <Section id="clouds" eyebrow="Clouds" title="AWS, Microsoft Azure and Google Cloud">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {CLOUDS.map((cloud) => {
+            const platform = capabilityById(cloud.platformCapabilityId);
+            return (
+              <li key={cloud.id} className="rounded-2xl border border-hair bg-surface p-5">
+                <h3 className="text-base font-semibold text-fg">{cloud.name}</h3>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted">Services</dt>
+                    <dd>
+                      <StateBadge state={cloud.servicesState} />
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted">{PRODUCT_DISPLAY_NAME}</dt>
+                    <dd>{platform && <CapabilityBadge capability={platform} />}</dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-sm leading-relaxed text-muted">{cloud.access}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+
+      {/* 14. Markets */}
+      <Section id="markets" tone="raised" eyebrow="Where we work" title="India and the United Arab Emirates">
+        <CardGrid columns={2} items={MARKETS.map((m) => ({ title: m.name, body: m.body }))} />
+      </Section>
+
+      {/* 15. What you receive */}
+      <Section
+        id="receive"
+        eyebrow="Deliverables"
+        title="What you receive"
+        intro={<p>What each engagement includes is set out in its written scope.</p>}
+      >
+        <CardGrid
+          columns={3}
+          items={[
+            { title: "Findings", body: "What fails, on which resource, and why it matters." },
+            { title: "A remediation plan", body: "Fixes in priority order, with their effect and how to roll back." },
+            { title: "Engineering changes", body: "Changes applied with your approval, where they are in scope." },
+            { title: "Verification", body: "Each fix re-checked by the same test that found the problem." },
+            {
+              title: "Signed, linked records",
+              body: `Where ${PRODUCT_DISPLAY_NAME} is used, each check is saved as a signed record linked to the one before.`,
+            },
+            {
+              title: "Closure and next steps",
+              body: "A closure record of what changed and whether it held, and recommendations for what comes next.",
+            },
+          ]}
+        />
+      </Section>
+
+      {/* 16. Trust and boundaries */}
+      <Section id="boundaries" tone="raised" eyebrow="How we work with you" title="Scope, access and change stay under your control">
+        <CardGrid
+          columns={3}
+          items={[
+            { title: "Scope agreed first", body: "Work starts only after a written scope is agreed." },
+            { title: "Access you control", body: "Read-only access to assess, in roles you create and can remove." },
+            { title: "Your authorization", body: "A named person in your organisation approves every change." },
+            { title: "Bounded changes", body: "Each change is limited to the resource and control it fixes." },
+            { title: "Verified results", body: "A fix counts only when the check that found the problem passes." },
+            { title: "People for sensitive changes", body: "Complex and sensitive production changes stay engineering-led." },
+          ]}
+        />
+        <p className="mt-6 text-sm">
+          <Link href="/security" className="font-medium text-accent underline-offset-4 hover:underline">
+            Trust &amp; security <span aria-hidden="true">→</span>
+          </Link>
+        </p>
+      </Section>
+
+      {/* 17. CTA */}
+      <CtaBand
+        title="Start with a scoping call."
+        body="Tell us about your cloud and what you need to fix or prove. You receive a written scope before any work starts."
+        primary={SCOPING_CTA}
+        secondary={PRODUCT_CTA}
+      />
+    </>
   );
 }

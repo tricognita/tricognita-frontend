@@ -11,7 +11,13 @@ const AWS_REGIONS = [
   "ap-south-1", "ap-southeast-1", "ap-northeast-1",
   "eu-west-1", "eu-central-1", "ca-central-1",
 ];
+const AZURE_REGIONS_DEFAULT = ["eastus", "centralindia"];
+const AZURE_REGIONS = [
+  "eastus", "eastus2", "westus", "westus2", "centralindia", "southindia",
+  "eastasia", "southeastasia", "westeurope", "northeurope",
+];
 const FRAMEWORKS = ["CIS AWS", "SOC 2", "DPDP", "NIST 800-53", "ISO 27001", "PCI-DSS"];
+type CloudProvider = "aws" | "azure";
 
 type Step = "welcome" | "connect" | "alerts" | "done";
 const STEPS: Step[] = ["welcome", "connect", "alerts", "done"];
@@ -25,11 +31,16 @@ export default function OnboardingPage() {
   );
 
   const [step, setStep]           = useState<Step>("welcome");
+  const [provider, setProvider]   = useState<CloudProvider>("aws");
   const [label, setLabel]         = useState("");
   const [roleArn, setRoleArn]     = useState("");
   const [accountId, setAccountId] = useState("");
   const [extId, setExtId]         = useState("");
   const [regions, setRegions]     = useState<string[]>(AWS_REGIONS_DEFAULT);
+  const [azureTenantId, setAzureTenantId]     = useState("");
+  const [azureClientId, setAzureClientId]     = useState("");
+  const [azureClientSecret, setAzureClientSecret] = useState("");
+  const [azureSubId, setAzureSubId]           = useState("");
   const [alertEmail, setAlertEmail] = useState(me?.email ?? "");
   const [framework, setFramework] = useState("CIS AWS");
   const [saving, setSaving]       = useState(false);
@@ -41,7 +52,45 @@ export default function OnboardingPage() {
     setRegions(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
   }
 
+  function selectProvider(p: CloudProvider) {
+    setProvider(p);
+    setCredError(null);
+    setRegions(p === "azure" ? AZURE_REGIONS_DEFAULT : AWS_REGIONS_DEFAULT);
+  }
+
   async function saveCredential() {
+    if (provider === "azure") {
+      if (!azureTenantId && !azureClientId && !azureSubId) { next(); return; } // skip if empty
+      if (!azureTenantId.trim() || !azureClientId.trim() || !azureClientSecret.trim() || !azureSubId.trim()) {
+        setCredError("Tenant ID, Client ID, Client Secret and Subscription ID are all required.");
+        return;
+      }
+      setSaving(true); setCredError(null);
+      try {
+        const res = await fetch("/api/credentials", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider: "azure",
+            label: label || "My Azure Subscription",
+            azure_tenant_id: azureTenantId,
+            azure_client_id: azureClientId,
+            azure_client_secret: azureClientSecret,
+            azure_subscription_id: azureSubId,
+            regions,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to save");
+        next();
+      } catch {
+        setCredError("Could not save — you can add credentials later from Settings.");
+        next();
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     if (!roleArn) { next(); return; } // skip if empty
     if (!extId.trim()) {
       setCredError("External ID is required — use the unique per-tenant value issued during onboarding.");
@@ -104,13 +153,13 @@ export default function OnboardingPage() {
             <div>
               <h1 className="text-2xl font-bold text-zinc-50">Welcome to Tricognita</h1>
               <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-                ARIA-powered cloud security for AWS. This 3-step setup connects your account,
+                ARIA-powered cloud security for AWS and Azure. This 3-step setup connects your account,
                 sets up alerts, and starts your first scan. Takes about 2 minutes.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               {[
-                { icon: "🔍", label: "Connect AWS" },
+                { icon: "🔍", label: "Connect your cloud" },
                 { icon: "🔔", label: "Alert email" },
                 { icon: "🚀", label: "Start scanning" },
               ].map(({ icon, label }) => (
@@ -145,47 +194,95 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 2: Connect AWS ─────────────────────────────────────────── */}
+        {/* ── Step 2: Connect a cloud account ─────────────────────────────── */}
         {step === "connect" && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-8 space-y-5">
             <div>
-              <h2 className="text-lg font-bold text-zinc-50">Connect your AWS account</h2>
+              <h2 className="text-lg font-bold text-zinc-50">Connect your cloud account</h2>
               <p className="text-xs text-zinc-500 mt-1">
-                Create a cross-account IAM role so ARIA can scan your resources read-only.
+                ARIA scans your resources read-only through a scoped, least-privilege identity.
               </p>
             </div>
 
-            <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-3 text-xs text-zinc-400 leading-relaxed">
-              <span className="text-zinc-300 font-semibold">Quick setup:</span>{" "}
-              In AWS Console → IAM → Create Role → Trusted entity:{" "}
-              <code className="text-violet-400 font-mono">arn:aws:iam::117459925630:root</code>{" "}
-              → Attach <code className="text-violet-400">ReadOnlyAccess</code> + <code className="text-violet-400">SecurityAudit</code>{" "}
-              → set the required <span className="text-zinc-300 font-semibold">External ID</span> to your per-tenant value (confused-deputy protection).
+            <div className="flex gap-2">
+              {(["aws", "azure"] as const).map(p => (
+                <button key={p} type="button" onClick={() => selectProvider(p)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${provider === p ? "bg-violet-700/60 text-violet-200 ring-1 ring-violet-600" : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+                  {p === "aws" ? "AWS" : "Azure"}
+                </button>
+              ))}
             </div>
+
+            {provider === "aws" ? (
+              <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-3 text-xs text-zinc-400 leading-relaxed">
+                <span className="text-zinc-300 font-semibold">Quick setup:</span>{" "}
+                In AWS Console → IAM → Create Role → Trusted entity:{" "}
+                <code className="text-violet-400 font-mono">arn:aws:iam::117459925630:root</code>{" "}
+                → Attach <code className="text-violet-400">ReadOnlyAccess</code> + <code className="text-violet-400">SecurityAudit</code>{" "}
+                → set the required <span className="text-zinc-300 font-semibold">External ID</span> to your per-tenant value (confused-deputy protection).
+              </div>
+            ) : (
+              <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-3 text-xs text-zinc-400 leading-relaxed">
+                <span className="text-zinc-300 font-semibold">Quick setup:</span>{" "}
+                In Entra ID → App registrations → New registration → create a{" "}
+                <code className="text-violet-400 font-mono">client secret</code> →
+                grant it <code className="text-violet-400">Reader</code> on the subscription
+                (Security Admin only where a control needs it) → paste the tenant, client, and
+                subscription IDs below.
+              </div>
+            )}
 
             <div className="space-y-3">
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Account label</label>
-                <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Production" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                <input value={label} onChange={e => setLabel(e.target.value)} placeholder={provider === "aws" ? "Production" : "Production subscription"} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
               </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">IAM Role ARN <span className="text-violet-400">*</span></label>
-                <input value={roleArn} onChange={e => setRoleArn(e.target.value)} placeholder="arn:aws:iam::123456789012:role/TricognitaReadOnly" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">AWS Account ID</label>
-                  <input value={accountId} onChange={e => setAccountId(e.target.value)} placeholder="123456789012" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">External ID <span className="text-violet-400">*</span></label>
-                  <input value={extId} onChange={e => setExtId(e.target.value)} placeholder="your tenant ExternalId" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
-                </div>
-              </div>
+
+              {provider === "aws" ? (
+                <>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">IAM Role ARN <span className="text-violet-400">*</span></label>
+                    <input value={roleArn} onChange={e => setRoleArn(e.target.value)} placeholder="arn:aws:iam::123456789012:role/TricognitaReadOnly" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">AWS Account ID</label>
+                      <input value={accountId} onChange={e => setAccountId(e.target.value)} placeholder="123456789012" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">External ID <span className="text-violet-400">*</span></label>
+                      <input value={extId} onChange={e => setExtId(e.target.value)} placeholder="your tenant ExternalId" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Tenant ID <span className="text-violet-400">*</span></label>
+                      <input value={azureTenantId} onChange={e => setAzureTenantId(e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Subscription ID <span className="text-violet-400">*</span></label>
+                      <input value={azureSubId} onChange={e => setAzureSubId(e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Client (Application) ID <span className="text-violet-400">*</span></label>
+                    <input value={azureClientId} onChange={e => setAzureClientId(e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Client Secret <span className="text-violet-400">*</span></label>
+                    <input type="password" value={azureClientSecret} onChange={e => setAzureClientSecret(e.target.value)} placeholder="••••••••••••••••" autoComplete="off" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                    <p className="text-[10px] text-zinc-600 mt-1">Stored encrypted server-side. Never sent back to the browser.</p>
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Regions</label>
                 <div className="flex flex-wrap gap-1.5">
-                  {AWS_REGIONS.map(r => (
+                  {(provider === "aws" ? AWS_REGIONS : AZURE_REGIONS).map(r => (
                     <button key={r} type="button" onClick={() => toggleRegion(r)}
                       className={`px-2 py-1 rounded text-[10px] font-mono transition-colors ${regions.includes(r) ? "bg-violet-700/60 text-violet-200 ring-1 ring-violet-600" : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
                       {r}

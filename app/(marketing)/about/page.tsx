@@ -1,219 +1,295 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { CardGrid, CtaBand, PageHero, Section } from "../../components/marketing/Blocks";
+import { CapabilityBadge, StateBadge } from "../../components/marketing/CapabilityBadge";
 import {
-  Code2,
-  Cpu,
-  Globe2,
-  Lock,
-  ShieldCheck,
-  Workflow,
-} from "lucide-react";
+  capabilityById,
+  CLOUDS,
+  PRODUCT_CAPABILITIES,
+  PRODUCT_DESCRIPTOR,
+  PRODUCT_DISPLAY_NAME,
+  publicCapabilities,
+  renderedState,
+  SERVICES,
+  type PublicState,
+} from "@/lib/marketing/capabilities";
+import { COMPANY_VISION, ENGINEERING_PRINCIPLES, FOUNDER, MARKETS } from "@/lib/marketing/company";
+import { PLATFORM_HREF, SCOPING_CALL_HREF, SERVICES_HREF } from "@/lib/marketing/site";
 
+// Plan: docs/02_Company/Marketing/TRICOGNITA_WEBSITE_REBUILD_PLAN.md Rev B.1
+// (Rev A §20 About / Founder). About answers why Tricognita exists, who built
+// it, how it thinks and where it is going; /product explains ARIA. Founder
+// facts and story, markets, clouds, states and the product name come from
+// lib/marketing/*. No team is shown beyond the founder.
 export const metadata: Metadata = {
-  title: "About — Tricognita",
-  description:
-    "Operating principles, leadership, and operational guarantees behind Tricognita's AI-native cloud security platform.",
+  title: "About",
+  description: `Why Tricognita exists, who built it and where it is going: a cloud security engineering company combining security services with ${PRODUCT_DISPLAY_NAME}, its product for ${PRODUCT_DESCRIPTOR.toLowerCase()}. Built from India, serving India and the UAE.`,
+  alternates: { canonical: "/about" },
 };
 
-const PRINCIPLES = [
-  {
-    icon: ShieldCheck,
-    title: "Compliance as a growth lever",
-    body: "Security should help you close enterprise deals, not just prevent breaches. We treat SOC 2, ISO 27001, and PCI evidence as first-class artifacts of running infrastructure — produced continuously, not assembled annually.",
-  },
-  {
-    icon: Workflow,
-    title: "Automation over headcount",
-    body: "Small teams shouldn't hire a dedicated SecOps engineer just to maintain cloud hygiene. ARIA automates the repetitive work — least-privilege drift, public-asset detection, evidence collection — that small teams keep skipping.",
-  },
-  {
-    icon: Globe2,
-    title: "Sovereign by architecture",
-    body: "Telemetry stays in the customer's chosen cloud region. We operate in your account, on your terms — built specifically for India and UAE data-residency requirements but applicable everywhere.",
-  },
-];
+const SCOPING_CTA = { href: SCOPING_CALL_HREF, label: "Book a scoping call" };
+const PRODUCT_CTA = { href: PLATFORM_HREF, label: `See ${PRODUCT_DISPLAY_NAME}` };
 
-const OPERATIONAL_GUARANTEES = [
-  { label: "Default posture", value: "Read-only" },
-  { label: "Healing default", value: "OPERATOR approval" },
-  { label: "Tokens", value: "HMAC-SHA256 JIT · 15-min TTL" },
-  { label: "Audit chain", value: "Hash-linked, tamper-evident" },
-  { label: "Data residency", value: "Customer AWS account" },
-  { label: "Telemetry retention", value: "Customer-controlled" },
-];
+function Panel({ eyebrow, title, children }: { eyebrow?: string; title: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col rounded-2xl border border-hair bg-surface p-6">
+      {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+      <h3 className={`${eyebrow ? "mt-2 " : ""}text-lg font-semibold text-fg`}>{title}</h3>
+      <div className="mt-3 flex-1 text-sm leading-relaxed text-muted">{children}</div>
+    </div>
+  );
+}
 
-const LEADERSHIP = [
-  {
-    icon: Cpu,
-    name: "Nithish Kumar S",
-    role: "Founder · Chief Architect",
-    bio: "Principal architect of the ARIA control plane and Tricognita's AWS-native sovereign-cloud framework. Owns the security model, BFF↔Go contract, and the JIT token system.",
-  },
-  {
-    icon: Code2,
-    name: "ARIA Detection Library",
-    role: "Engineered in",
-    bio: "MITRE ATT&CK mapping, CIS benchmarks, NIST 800-53 controls, and CVE telemetry built into the engine — no external research subscription required.",
-  },
-  {
-    icon: Lock,
-    name: "Founding-cohort engineering",
-    role: "Hands-on support",
-    bio: "Customers work directly with the engineering team for onboarding, policy definition, and incident triage during the founding cohort.",
-  },
-];
+function Dashes({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((it) => (
+        <li key={it} className="flex gap-2">
+          <span aria-hidden="true">–</span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 
 export default function AboutPage() {
+  const availableServices = publicCapabilities(SERVICES).filter((s) => renderedState(s) === "available");
+  const launchingServices = publicCapabilities(SERVICES).filter((s) => renderedState(s) === "launching");
+  const product = publicCapabilities(PRODUCT_CAPABILITIES);
+  // ARIA's overall public state: Available only once one of its capabilities is.
+  const productState: PublicState = product.some((c) => renderedState(c) === "available") ? "available" : "launching";
+  const gcp = capabilityById("evaluation-gcp");
+
   return (
     <>
-      {/* Hero */}
-      <div
-        className="relative min-h-[44vh] flex flex-col justify-center"
-        style={{ background: "var(--ink)" }}
-      >
-        <section className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center">
-          <p className="text-[10px] font-mono tracking-widest text-[var(--matcha-300)] font-semibold mb-4 uppercase">
-            Operating Principles
-          </p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-[var(--stone-50)] tracking-tight leading-[1.1] serif-display">
-            The security platform <br className="hidden sm:block" />
-            we wished we had.
-          </h1>
-          <p className="mt-6 max-w-2xl mx-auto text-base text-[var(--stone-400)] leading-relaxed">
-            Tricognita exists because legacy enterprise security tools slow
-            down the teams they protect. Startups and mid-market SecOps teams
-            need to pass SOC 2 and scale fast — without hiring a dedicated
-            engineer on day one. ARIA closes that gap.
-          </p>
-        </section>
-      </div>
+      {/* 1. Hero: why Tricognita exists (the homepage says what it does). */}
+      <PageHero
+        eyebrow="About Tricognita"
+        title="Built to close the gap between finding a security problem and knowing it is fixed."
+        sub={
+          <>
+            Tricognita is a cloud security engineering company, built from India and serving India and the United Arab
+            Emirates. We combine hands-on security engineering with {PRODUCT_DISPLAY_NAME}, our product for{" "}
+            {PRODUCT_DESCRIPTOR.toLowerCase()}.
+          </>
+        }
+        primary={SCOPING_CTA}
+        secondary={PRODUCT_CTA}
+      />
 
-      {/* Operating principles */}
-      <section className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-5">
-        {PRINCIPLES.map((p) => {
-          const Icon = p.icon;
-          return (
-            <div
-              key={p.title}
-              className="rounded-[var(--radius)] border border-[var(--sage-soft)] bg-[var(--moss-rise)] p-6 flex flex-col"
-            >
-              <Icon
-                size={20}
-                className="text-[var(--matcha-300)] mb-3"
-                aria-hidden
-              />
-              <h3 className="text-base font-semibold text-[var(--stone-50)] mb-2 tracking-tight">
-                {p.title}
-              </h3>
-              <p className="text-sm text-[var(--stone-400)] leading-relaxed flex-1">
-                {p.body}
-              </p>
+      {/* 2. Founder story */}
+      <Section id="story" eyebrow="Our story" title="Why Tricognita exists">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <div className="rounded-2xl border border-hair bg-surface p-6">
+              <p className="text-lg font-semibold text-fg">{FOUNDER.name}</p>
+              <p className="mt-1 text-sm text-muted">{FOUNDER.title}</p>
+              <a href="#founder" className="mt-4 inline-block text-sm font-medium text-accent underline-offset-4 hover:underline">
+                Credentials and focus <span aria-hidden="true">→</span>
+              </a>
             </div>
-          );
-        })}
-      </section>
-
-      {/* Operational guarantees */}
-      <section
-        className="border-y"
-        style={{
-          background: "var(--moss)",
-          borderColor: "var(--sage-soft)",
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-14">
-          <p className="text-[10px] font-mono tracking-widest text-[var(--matcha-300)] font-semibold mb-3 uppercase">
-            Operational guarantees
-          </p>
-          <h2 className="text-2xl font-bold text-[var(--stone-50)] mb-2 tracking-tight">
-            What we commit to, baked into the architecture.
-          </h2>
-          <p className="text-sm text-[var(--stone-400)] mb-8 max-w-2xl leading-relaxed">
-            These aren't promises in a marketing deck — they're enforced by
-            the code that runs in your account. Every guarantee here is
-            verifiable from CloudTrail or the Tricognita audit chain.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {OPERATIONAL_GUARANTEES.map((g) => (
-              <div
-                key={g.label}
-                className="rounded-md border border-[var(--sage-soft)] bg-[var(--ink-deep)] px-4 py-3"
-              >
-                <p className="text-[10px] font-mono uppercase tracking-widest text-[var(--stone-500)]">
-                  {g.label}
-                </p>
-                <p className="text-sm text-[var(--stone-100)] font-medium mt-1">
-                  {g.value}
-                </p>
-              </div>
+          </div>
+          <div className="space-y-5 text-base leading-relaxed text-muted lg:col-span-2">
+            {FOUNDER.story.map((para) => (
+              <p key={para}>{para}</p>
             ))}
+            <p className="text-sm text-fg">— {FOUNDER.name}</p>
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* Leadership */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
-        <p className="text-[10px] font-mono tracking-widest text-[var(--matcha-300)] font-semibold mb-3 uppercase">
-          Leadership
-        </p>
-        <h2 className="text-2xl font-bold text-[var(--stone-50)] mb-8 tracking-tight">
-          Who you'll work with.
-        </h2>
-        <div className="grid md:grid-cols-3 gap-4">
-          {LEADERSHIP.map((p) => {
-            const Icon = p.icon;
-            return (
-              <div
-                key={p.name}
-                className="rounded-[var(--radius)] border border-[var(--sage-soft)] bg-[var(--moss-rise)] p-6"
-              >
-                <div
-                  className="w-10 h-10 rounded-md flex items-center justify-center mb-4"
-                  style={{
-                    background: "color-mix(in oklch, var(--matcha-600) 18%, var(--moss))",
-                  }}
-                  aria-hidden
-                >
-                  <Icon size={18} className="text-[var(--matcha-200)]" />
-                </div>
-                <p className="text-sm font-semibold text-[var(--stone-50)]">
-                  {p.name}
-                </p>
-                <p className="text-xs text-[var(--matcha-300)] mb-2">{p.role}</p>
-                <p className="text-xs text-[var(--stone-500)] leading-relaxed">
-                  {p.bio}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section
-        className="border-t"
-        style={{
-          background: "var(--moss)",
-          borderColor: "var(--sage-soft)",
-        }}
+      {/* 3. Company model (short; technical detail lives on /product) */}
+      <Section
+        id="model"
+        tone="raised"
+        eyebrow="Company model"
+        title="Two engines: services and product"
+        intro={<p>Both are core to Tricognita, and each makes the other better.</p>}
       >
-        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-          <h2 className="text-2xl font-bold text-[var(--stone-50)] mb-3 tracking-tight">
-            Want to go deeper?
-          </h2>
-          <p className="text-sm text-[var(--stone-400)] mb-6 max-w-xl mx-auto leading-relaxed">
-            Talk to an architect about your specific threat model, sovereignty
-            requirements, or onboarding path.
-          </p>
-          <Link
-            href="/contact"
-            className="inline-block px-6 py-3 rounded-md text-sm font-semibold text-white transition-colors"
-            style={{ background: "var(--matcha-600)" }}
-          >
-            Contact us
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Panel eyebrow="Services" title="What our people do">
+            <p>
+              Assessment, testing, remediation, readiness and secure engineering, with retainers that keep controls in
+              place.
+            </p>
+            <Link href={SERVICES_HREF} className="mt-4 inline-block font-medium text-accent underline-offset-4 hover:underline">
+              Our services <span aria-hidden="true">→</span>
+            </Link>
+          </Panel>
+          <Panel eyebrow="Product" title={PRODUCT_DISPLAY_NAME}>
+            <p>
+              Automates the repeatable work: evaluating controls, approved bounded fixes, verification, re-checks and
+              records. Every change needs the customer&apos;s authorization.
+            </p>
+            <Link href={PLATFORM_HREF} className="mt-4 inline-block font-medium text-accent underline-offset-4 hover:underline">
+              {PRODUCT_CTA.label} <span aria-hidden="true">→</span>
+            </Link>
+          </Panel>
+        </div>
+      </Section>
+
+      {/* 4. How we operate */}
+      <Section id="operating-model" eyebrow="How we operate" title="What we do differently">
+        <CardGrid
+          columns={2}
+          items={[
+            {
+              title: "A written scope first",
+              body: "Every engagement starts with a scoping call and a written scope before any work begins.",
+            },
+            {
+              title: "Nothing changes without authorization",
+              body: "A named person in the customer's organisation approves every change, and each change is bounded to what it fixes.",
+            },
+            {
+              title: "Every fix is verified",
+              body: "Work is finished when the check passes, not when a change is made.",
+            },
+            {
+              title: "Service work becomes product",
+              body: `Fixes that prove safe and repeatable in engagements are built into ${PRODUCT_DISPLAY_NAME}.`,
+            },
+          ]}
+        />
+      </Section>
+
+      {/* 5. Engineering principles */}
+      <Section id="principles" tone="raised" eyebrow="Engineering principles" title="How we make security changes">
+        <CardGrid columns={3} items={[...ENGINEERING_PRINCIPLES]} />
+      </Section>
+
+      {/* 6. Founder credentials and focus */}
+      <Section id="founder" eyebrow="Founder" title={FOUNDER.name} intro={<p>{FOUNDER.title}</p>}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Panel title="Focus">
+            <Dashes items={FOUNDER.focus} />
+          </Panel>
+          <Panel title="Individual credentials">
+            <Dashes items={FOUNDER.credentials} />
+            <p className="mt-4 text-xs">These are the founder&apos;s personal credentials, not company certifications.</p>
+          </Panel>
+        </div>
+      </Section>
+
+      {/* 7. ARIA (brief; /product has the detail) */}
+      <Section
+        id="aria"
+        tone="raised"
+        eyebrow="Our product"
+        title={PRODUCT_DISPLAY_NAME}
+        intro={
+          <>
+            <p className="text-lg text-fg">{PRODUCT_DESCRIPTOR}</p>
+            <p>
+              We built {PRODUCT_DISPLAY_NAME} so the repeatable parts of cloud security work are done the same way every
+              time, with customer approval and human judgement kept in the loop.
+            </p>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
+          <StateBadge state={productState} />
+          <Link href={PLATFORM_HREF} className="font-medium text-accent underline-offset-4 hover:underline">
+            How {PRODUCT_DISPLAY_NAME} works <span aria-hidden="true">→</span>
           </Link>
         </div>
-      </section>
+      </Section>
+
+      {/* 8. Markets and clouds */}
+      <Section id="markets" eyebrow="Where we are building" title="India and the United Arab Emirates">
+        <CardGrid
+          columns={2}
+          items={MARKETS.map((m) => ({ title: m.name, body: <><p>{m.rationale}</p><p className="mt-2">{m.body}</p></> }))}
+        />
+        <h3 className="mt-12 text-base font-semibold text-fg">Clouds</h3>
+        <ul className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {CLOUDS.map((cloud) => {
+            const platform = capabilityById(cloud.platformCapabilityId);
+            return (
+              <li key={cloud.id} className="rounded-2xl border border-hair bg-surface p-5">
+                <h4 className="text-base font-semibold text-fg">{cloud.name}</h4>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted">Services</dt>
+                    <dd>
+                      <StateBadge state={cloud.servicesState} />
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted">{PRODUCT_DISPLAY_NAME}</dt>
+                    <dd>{platform && <CapabilityBadge capability={platform} />}</dd>
+                  </div>
+                </dl>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-6 text-sm text-muted">
+          <Link href="/security" className="font-medium text-accent underline-offset-4 hover:underline">
+            How we handle access, change and data <span aria-hidden="true">→</span>
+          </Link>
+        </p>
+      </Section>
+
+      {/* 9. Today and next */}
+      <Section
+        id="today"
+        tone="raised"
+        eyebrow="Today and next"
+        title="What is real today, and what we are building"
+        intro={<p>Every capability on this site carries its current state. We do not describe plans as delivered.</p>}
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Panel title="Available today">
+            <Dashes items={availableServices.map((s) => s.name)} />
+          </Panel>
+          <Panel title="Being built">
+            <ul className="space-y-2">
+              <li className="flex items-center justify-between gap-3">
+                <span>{PRODUCT_DISPLAY_NAME}</span>
+                <StateBadge state={productState} />
+              </li>
+              {gcp && (
+                <li className="flex items-center justify-between gap-3">
+                  <span>Google Cloud</span>
+                  <CapabilityBadge capability={gcp} />
+                </li>
+              )}
+              {launchingServices.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-3">
+                  <span>{s.name}</span>
+                  <CapabilityBadge capability={s} />
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
+      </Section>
+
+      {/* 10. Vision */}
+      <Section id="vision" eyebrow="Where we are going" title="Services and software that reinforce each other" intro={<p>{COMPANY_VISION}</p>}>
+        <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {["Customer problems", "Engineering knowledge", "Repeatable workflows", `Automation in ${PRODUCT_DISPLAY_NAME}`].map(
+            (step, i) => (
+              <li key={step} className="rounded-2xl border border-hair bg-surface p-5">
+                <p className="font-mono text-xs text-muted">0{i + 1}</p>
+                <p className="mt-1 text-sm font-semibold text-fg">{step}</p>
+              </li>
+            ),
+          )}
+        </ol>
+      </Section>
+
+      {/* 11. CTA */}
+      <CtaBand
+        title="Start with a scoping call."
+        body="Tell us about your cloud and what your customers or auditors are asking for. You receive a written scope before any work starts."
+        primary={SCOPING_CTA}
+        secondary={PRODUCT_CTA}
+      />
     </>
   );
 }

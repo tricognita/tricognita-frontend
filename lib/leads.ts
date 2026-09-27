@@ -25,7 +25,11 @@
 import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 
-export type LeadKind = "request_demo" | "pilot_application" | "waitlist" | "contact";
+import { type LeadKind } from "./lead-kinds";
+
+// Kinds, labels and the legacy request_demo policy live in lib/lead-kinds.ts
+// (pure, so the client-side admin inbox can share them).
+export { KIND_LABELS, LEAD_KINDS, LEGACY_LEAD_KINDS, kindLabel, type LeadKind } from "./lead-kinds";
 
 export type LeadStatus = "new" | "contacted" | "qualified" | "closed";
 
@@ -60,12 +64,6 @@ export interface LeadEntry {
   submitted_at: string;
 }
 
-export const LEAD_KINDS: readonly LeadKind[] = [
-  "request_demo",
-  "pilot_application",
-  "waitlist",
-  "contact",
-] as const;
 
 const INBOX_KEY = "tricognita:leads:inbox";
 const INBOX_CAP = 500;
@@ -221,13 +219,6 @@ export async function updateLeadStatus(
   return entry;
 }
 
-/** Display labels for the UI. */
-export const KIND_LABELS: Record<LeadKind, string> = {
-  request_demo: "Request demo",
-  pilot_application: "Pilot application",
-  waitlist: "Waitlist",
-  contact: "Contact",
-};
 
 export const STATUS_INTENT: Record<
   LeadStatus,

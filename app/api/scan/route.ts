@@ -69,6 +69,26 @@ async function runScan({
   token: string;
   req: Request;
 }): Promise<Response> {
+  // Write scan-started status to Redis (non-blocking, fail-open)
+  const _writeScanStatus = async (status: string, extra: Record<string, unknown> = {}) => {
+    try {
+      const { Redis } = await import("@upstash/redis");
+      const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+      const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+      if (!url || !token) return;
+      const redis = new Redis({ url, token });
+      const key = `trico:scan:status:${session.tenantId}`;
+      await redis.set(key, JSON.stringify({
+        status,
+        started_at: new Date().toISOString(),
+        service: "IAM",
+        progress_pct: status === "scanning" ? 5 : 100,
+        elapsed_s: 0,
+        ...extra,
+      }), { ex: 600 }); // 10 min TTL
+    } catch { /* fail-open — scan still works without Redis */ }
+  };
+  void _writeScanStatus("scanning");
   const incomingIdempotency = req.headers.get("idempotency-key");
   const idempotencyKey =
     incomingIdempotency && /^[a-zA-Z0-9-]{8,72}$/.test(incomingIdempotency)
@@ -156,6 +176,7 @@ async function runScan({
     session.tenantId,
   ).catch(() => {});
 
+  void _writeScanStatus("complete", { findings_count: findings, progress_pct: 100 });
   logRoute(ctx, "info", "scan.complete", {
     tenant_id: session.tenantId,
     findings,

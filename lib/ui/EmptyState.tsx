@@ -63,7 +63,7 @@ export function EmptyState({
   return (
     <div className={cn(VARIANT_CLASSES[variant], className)} {...rest}>
       {icon && !isCompact && (
-        <div className="flex justify-center mb-3 text-[var(--stone-400)]">
+        <div className="flex justify-center mb-3 text-[var(--fg-muted)]">
           {icon}
         </div>
       )}

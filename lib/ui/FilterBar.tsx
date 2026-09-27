@@ -83,7 +83,7 @@ const ACTIVE_INTENT: Record<FilterChipIntent, string> = {
   neutral:
     "bg-[var(--matcha-300)]/15 text-[var(--matcha-200)] ring-1 ring-inset ring-[var(--matcha-300)]/30",
   success:
-    "bg-[var(--matcha-400)]/15 text-[var(--matcha-300)] ring-1 ring-inset ring-[var(--matcha-400)]/30",
+    "bg-[var(--success)]/15 text-[var(--success)] ring-1 ring-inset ring-[var(--success)]/30",
   warning:
     "bg-[var(--amber-clay)]/15 text-[var(--amber-clay)] ring-1 ring-inset ring-[var(--amber-clay)]/30",
   danger:

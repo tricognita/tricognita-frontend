@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx --test \"app/components/geometry/*.test.ts\" \"lib/contracts/*.test.ts\" \"lib/motion/*.test.ts\" \"app/components/product/*.test.ts\" \"lib/mock/*.test.ts\""
+    "test": "node --import tsx --test \"app/components/geometry/*.test.ts\" \"lib/contracts/*.test.ts\" \"lib/motion/*.test.ts\" \"app/components/product/*.test.ts\" \"lib/mock/*.test.ts\" \"lib/fixtures/*.test.ts\" \"lib/domain/*.test.ts\" \"lib/*.test.ts\" \"lib/api/*.test.ts\" \"lib/api/adapters/*.test.ts\""
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1034.0",
@@ -18,7 +18,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.8.0",
-    "next": "16.2.10",
+    "next": "16.3.4",
     "otpauth": "^9.5.0",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
@@ -37,7 +37,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.3",
+    "eslint-config-next": "16.3.4",
+    "server-only": "^0.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"

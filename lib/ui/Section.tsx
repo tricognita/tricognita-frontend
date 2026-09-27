@@ -15,13 +15,16 @@ import { cn } from "./cn";
  *
  * Example:
  *   <Section
- *     eyebrow="Posture"
- *     title="Cloud Security Score"
- *     description="Composite score across IAM, network, storage, and compute domains."
- *     actions={<button>Refresh</button>}
+ *     eyebrow="Current state"
+ *     title="Controls"
+ *     description="Every control in your baseline, by its result at the last verification."
+ *     actions={<Button>Run verification</Button>}
  *   >
- *     <PostureScoreGauge />
+ *     <AssuranceCounts controls={controls} />
  *   </Section>
+ *
+ * The product never derives a score, rating or grade from control counts, so
+ * no example here should suggest one.
  */
 
 interface SectionProps extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
@@ -73,7 +76,7 @@ export const Section = React.forwardRef<HTMLElement, SectionProps>(
                 </h2>
               )}
               {description && (
-                <p className="text-xs text-[var(--stone-400)] mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-[var(--fg-muted)] mt-1 max-w-2xl leading-relaxed">
                   {description}
                 </p>
               )}

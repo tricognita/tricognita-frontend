@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/lib/marketing/site";
 
 // PWA manifest. Icons derive from the canonical octopus-in-triangle mark
 // (source of truth: /public/brand/tricognita_mark_transparent.png). See /public/brand/icons.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Tricognita — Autonomous Cloud Resilience",
-    short_name: "Tricognita",
-    description:
-      "Autonomous cloud security with ARIA — predictive risk, self-healing remediation, and zero-trust enforcement.",
+    name: SITE_TITLE,
+    short_name: SITE_NAME,
+    description: SITE_DESCRIPTION,
     start_url: "/",
     display: "standalone",
     background_color: "#0B0914",

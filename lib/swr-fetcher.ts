@@ -32,6 +32,8 @@
  *   }
  */
 
+import { isDemoMode, demoFetcher } from "@/lib/demo-mode";
+
 export interface ApiErrorBody {
   error?: string;
   message?: string;
@@ -95,6 +97,12 @@ export async function fetcher<T = unknown>(
   url: string,
   opts: FetcherOptions = {},
 ): Promise<T> {
+  // ── Demo mode intercept (display-layer only; auth/RBAC still enforced) ──
+  if (isDemoMode()) {
+    const demoResult = demoFetcher(url);
+    if (demoResult !== undefined) return demoResult as T;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
   const requestId = opts.requestId ?? newRequestId();
   const headers: Record<string, string> = {
     "X-Request-ID": requestId,

@@ -37,6 +37,7 @@ function tierForRole(role: string | undefined): "AUTO" | "OPERATOR" | "DUAL_CONT
     case "FINOPS_ANALYST":
     case "CLIENT":
     case "VIEWER":
+    case "DESIGNER":
       // Read-only roles → AUTO tier. The Go API's read endpoints accept AUTO;
       // any write endpoint they hit will be rejected at the tier check rather
       // than silently elevated.

@@ -1,4 +1,4 @@
-import type { ServiceDescriptor } from "@/app/dashboard/components/ServiceCard";
+import type { ServiceDescriptor } from "@/app/dashboard/(legacy)/components/ServiceCard";
 
 export const SERVICES: ServiceDescriptor[] = [
   {

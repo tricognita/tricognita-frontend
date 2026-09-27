@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { RETIRED_ROUTES } from "./lib/marketing/site";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -79,6 +80,11 @@ const nextConfig: NextConfig = {
   // Pin Turbopack workspace root to this directory so it doesn't traverse up
   // to the repo-root package-lock.json and pick the wrong workspace root.
   turbopack: { root: __dirname },
+  // Retired and moved marketing routes (MARKETING_SITEMAP.md §4): permanent
+  // redirects so old links and search results land on the new pages.
+  async redirects() {
+    return RETIRED_ROUTES.map((r) => ({ source: r.source, destination: r.destination, permanent: true }));
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

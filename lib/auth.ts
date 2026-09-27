@@ -16,12 +16,15 @@ export type Role =
   | "CLOUD_ENGINEER"
   | "RED_TEAMER"
   | "FINOPS_ANALYST"
-  | "CLIENT";
+  | "CLIENT"
+  // Design-review account: read-only product surfaces, deny-by-default
+  // (lib/dashboard-authz.ts DESIGNER_ROUTES, lib/api-authz.ts DESIGNER_API).
+  | "DESIGNER";
 
 export const ROLES: Role[] = [
   "ADMIN", "SECOPS", "AUDITOR", "VIEWER",
   "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER",
-  "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"
+  "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "DESIGNER"
 ];
 
 const COOKIE_NAME    = "trico_session";
@@ -243,54 +246,6 @@ export async function verifyRefreshToken(token: string | undefined): Promise<Ref
 }
 
 // ── Zero-Trust Route → Role Map ─────────────────────────────────────────────
-// DENY BY DEFAULT: any route listed here requires the listed roles.
-// Routes NOT listed = any authenticated user may access.
-// Principle: least privilege. Clients get read-only views; admins get full power.
-const ALL_ROLES: Role[] = ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "SOC_LEAD", "DEVSECOPS", "RED_TEAMER", "FINOPS_ANALYST", "CLOUD_ENGINEER", "CLIENT"];
-
-const ROLE_ROUTES: Array<{ prefix: string; allow: Role[] }> = [
-  // ── Admin-only ────────────────────────────────────────────────────────────
-  { prefix: "/dashboard/users",                  allow: ["ADMIN"] },
-  { prefix: "/dashboard/admin",                  allow: ["ADMIN"] },
-  { prefix: "/dashboard/settings",               allow: ["ADMIN", "SECOPS"] },
-
-  // ── Admin + SecOps write operations ──────────────────────────────────────
-  { prefix: "/dashboard/guard/policies",         allow: ["ADMIN", "SECOPS", "SOC_LEAD"] },
-  { prefix: "/dashboard/zero-trust",             allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
-
-  // ── Broad access: all internal roles + clients get read-only view ─────────
-  { prefix: "/dashboard/executive",              allow: ALL_ROLES },
-  { prefix: "/dashboard/plan",                   allow: ALL_ROLES },
-  { prefix: "/dashboard/exports",                allow: ALL_ROLES },
-  { prefix: "/dashboard/queue",                  allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "AUDITOR"] },
-  { prefix: "/dashboard/soc",                    allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "AUDITOR"] },
-  { prefix: "/dashboard/attack-graph",           allow: ALL_ROLES },
-  { prefix: "/dashboard/ai-security",            allow: ALL_ROLES },
-  { prefix: "/dashboard/threat-intel",           allow: ALL_ROLES },
-  { prefix: "/dashboard/incidents",              allow: ALL_ROLES },
-  { prefix: "/dashboard/finops-security",        allow: ALL_ROLES },
-  { prefix: "/dashboard/services",               allow: ALL_ROLES },
-  { prefix: "/dashboard/audit-trail",            allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/compliance",             allow: ALL_ROLES },
-  { prefix: "/dashboard/findings",              allow: ALL_ROLES },
-  { prefix: "/dashboard/dspm",                  allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
-  { prefix: "/dashboard/iac",                   allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/k8s",                  allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/credentials",          allow: ["ADMIN", "SECOPS", "CLOUD_ENGINEER", "DEVSECOPS"] },
-  { prefix: "/onboarding",                     allow: ALL_ROLES },
-  { prefix: "/dashboard/guard/reports",          allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD"] },
-  { prefix: "/dashboard/guard",                  allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/aria",                   allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/alert-routes",           allow: ["ADMIN", "SECOPS"] },
-  { prefix: "/dashboard/api-keys",               allow: ["ADMIN"] },
-];
-
-export function isRoleAllowed(pathname: string, role: Role): boolean {
-  for (const rule of ROLE_ROUTES) {
-    if (pathname === rule.prefix || pathname.startsWith(rule.prefix + "/")) {
-      return rule.allow.includes(role);
-    }
-  }
-  // Default: allow any authenticated user
-  return true;
-}
+// Lives in lib/dashboard-authz.ts (dependency-free, so it is unit-testable);
+// re-exported here so middleware.ts keeps one import.
+export { isRoleAllowed } from "./dashboard-authz";

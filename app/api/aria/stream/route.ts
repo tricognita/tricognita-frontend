@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { verifySession, sessionCookieName } from "@/lib/auth";
 import { secretOrError, GO_API } from "@/lib/jit-secret";
 import { getJitToken } from "@/lib/jit-token";
+import { relayAriaStream, SSE_HEADERS } from "@/lib/aria-stream";
 
 export async function GET(req: Request): Promise<Response> {
   const jar = await cookies();
@@ -17,14 +18,7 @@ export async function GET(req: Request): Promise<Response> {
       headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
       cache: "no-store",
     });
-    return new Response(res.body, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
+    return relayAriaStream(res);
   } catch {
     console.warn(`[stream] Go API unreachable. Serving empty simulated stream.`);
     const stream = new ReadableStream({
@@ -39,13 +33,6 @@ export async function GET(req: Request): Promise<Response> {
         });
       }
     });
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
+    return new Response(stream, { headers: SSE_HEADERS });
   }
 }

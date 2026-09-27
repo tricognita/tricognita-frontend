@@ -1,5 +1,5 @@
-import { SiteNav } from "../components/site/SiteNav";
-import { Footer } from "../components/Footer";
+import { MarketingHeader } from "../components/marketing/MarketingHeader";
+import { MarketingFooter } from "../components/marketing/MarketingFooter";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,9 +10,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       >
         Skip to main content
       </a>
-      <SiteNav />
+      <MarketingHeader />
       <main id="main-content" tabIndex={-1} className="flex-1 outline-none">{children}</main>
-      <Footer />
+      <MarketingFooter />
     </div>
   );
 }
