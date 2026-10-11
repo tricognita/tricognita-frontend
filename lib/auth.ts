@@ -91,6 +91,8 @@ export interface Session {
   jti: string;   // unique token ID for replay prevention
   uat: string;   // first 16 hex chars of SHA-256(userAgent) — client binding
   mustReset?: boolean;
+  /** true only when a second factor was verified at login; copied into the signed JIT `mfa` claim. */
+  mfa?: boolean;
 }
 
 // Generate a 128-bit random token ID (jti)
@@ -111,7 +113,7 @@ async function uaFingerprint(userAgent: string): Promise<string> {
 }
 
 // signSession: email + role + tenantId + UA fingerprint → signed token
-export async function signSession(email: string, role: Role, tenantId: string, userAgent = "", mustReset = false): Promise<string> {
+export async function signSession(email: string, role: Role, tenantId: string, userAgent = "", mustReset = false, mfa = false): Promise<string> {
   const secret = getSecret();
   const now = Math.floor(Date.now() / 1000);
   const payload: Session = {
@@ -123,6 +125,7 @@ export async function signSession(email: string, role: Role, tenantId: string, u
     jti: randomJti(),
     uat: await uaFingerprint(userAgent),
     mustReset,
+    ...(mfa ? { mfa: true } : {}),
   };
   const payloadB64 = base64url(enc(JSON.stringify(payload)));
   const sig = await hmac(secret, payloadB64);
@@ -207,9 +210,10 @@ export interface RefreshPayload {
   jti:   string; // refresh token's own jti
   iat:   number;
   exp:   number;
+  mfa?:  boolean; // second factor verified at login; survives refresh
 }
 
-export async function signRefreshToken(email: string, role: Role, tenantId: string): Promise<string> {
+export async function signRefreshToken(email: string, role: Role, tenantId: string, mfa = false): Promise<string> {
   const secret = getSecret();
   const now = Math.floor(Date.now() / 1000);
   const payload: RefreshPayload = {
@@ -217,6 +221,7 @@ export async function signRefreshToken(email: string, role: Role, tenantId: stri
     jti: randomJti(),
     iat: now,
     exp: now + REFRESH_TTL_SECONDS,
+    ...(mfa ? { mfa: true } : {}),
   };
   const payloadB64 = base64url(enc(JSON.stringify(payload)));
   const sig = await hmac(secret + ":refresh", payloadB64); // different key domain from access tokens

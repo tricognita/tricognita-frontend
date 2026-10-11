@@ -49,7 +49,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // Re-issue session cookie with mustReset: false
-  const newToken = await signSession(session.email, session.role, session.tenantId, req.headers.get("user-agent") || "", false);
+  const newToken = await signSession(session.email, session.role, session.tenantId, req.headers.get("user-agent") || "", false, session.mfa === true);
   
   const res = Response.json({ ok: true, message: "Password updated successfully." });
   res.headers.append("Set-Cookie", `${sessionCookieName()}=${newToken}; ${sessionCookieOptions()}`);

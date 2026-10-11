@@ -115,6 +115,39 @@ export function logRoute(
  * handlers don't see the Request param (they capture it via closure if
  * they need the URL / body).
  */
+/**
+ * The Go API answers 403 `direct_access_denied` when a request did not arrive
+ * through the trusted Cloudflare path (origin protection). That is an
+ * infrastructure fault, not a statement about the signed-in user's permissions.
+ * Passed through as a 403 it renders as "not authorised", which sends people
+ * after the wrong problem. Report it as an outage (502) with a stable code, and
+ * log it as an error. The origin check itself is never relaxed.
+ */
+export async function originRejectionAsOutage(
+  ctx: RequestContext,
+  res: Response,
+): Promise<Response> {
+  if (res.status !== 403) return res;
+  let code: unknown;
+  try {
+    code = ((await res.clone().json()) as { error?: unknown }).error;
+  } catch {
+    return res;
+  }
+  if (code !== "direct_access_denied") return res;
+  logRoute(ctx, "error", "upstream.origin_rejected", {
+    hint: "Go API origin protection rejected the BFF; SENTINEL_API_URL must be the Cloudflare-proxied API host",
+  });
+  return Response.json(
+    {
+      error: "api_origin_rejected",
+      message: "The service is temporarily unavailable. This is not a permissions problem. If it persists, share the request id with support.",
+      request_id: ctx.requestId,
+    },
+    { status: 502 },
+  );
+}
+
 export async function withRequestContext(
   req: Request,
   handler: (ctx: RequestContext) => Promise<Response>,
@@ -155,7 +188,8 @@ export async function withRequestContext(
   });
 
   try {
-    const res = await handler(ctx);
+    let res = await handler(ctx);
+    res = await originRejectionAsOutage(ctx, res);
     const wrapped = respond(res);
     logRoute(ctx, wrapped.status >= 500 ? "error" : "info", "request.end", {
       method: req.method,

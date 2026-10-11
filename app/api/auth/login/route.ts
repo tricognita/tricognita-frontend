@@ -119,6 +119,7 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     // ── MFA check ──────────────────────────────────────────────────────────────
+    let mfaVerified = false;
     if (user.mfaEnabled && user.mfaSecret) {
       const mfaCode = typeof body.mfaCode === "string" ? body.mfaCode : "";
       if (!mfaCode) {
@@ -135,6 +136,7 @@ export async function POST(req: Request): Promise<Response> {
           { status: 401, headers: { "Content-Type": "application/json", "X-Request-ID": rid } }
         );
       }
+      mfaVerified = true;
     }
 
     // ── Success path ───────────────────────────────────────────────────────────
@@ -144,8 +146,8 @@ export async function POST(req: Request): Promise<Response> {
 
     // Bind access token to the client's User-Agent fingerprint
     const userAgent    = req.headers.get("user-agent") ?? "";
-    const accessToken  = await signSession(user.email, user.role, user.tenantId, userAgent, user.mustReset);
-    const refreshToken = await signRefreshToken(user.email, user.role, user.tenantId);
+    const accessToken  = await signSession(user.email, user.role, user.tenantId, userAgent, user.mustReset, mfaVerified);
+    const refreshToken = await signRefreshToken(user.email, user.role, user.tenantId, mfaVerified);
 
     // Persist refresh token in Redis for server-side rotation + revocation
     storeRefreshToken(refreshToken, {
