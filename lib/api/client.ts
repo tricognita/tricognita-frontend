@@ -128,3 +128,34 @@ export async function apiDelete<T>(path: string, capability: string, body?: unkn
   }
   return (await res.json()) as T;
 }
+
+/** apiSend: any mutation method; a failed request is an error, never a silent success. */
+export async function apiSend<T>(method: "POST" | "PUT" | "PATCH" | "DELETE", path: string, capability: string, body?: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method,
+      credentials: "same-origin",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (cause) {
+    throw new ApiError(0, `${capability} could not be reached: ${String(cause)}`);
+  }
+  if (res.status === 401 || res.status === 403) throw new ApiError(res.status, `not authorised to ${capability}`);
+  if (!res.ok) {
+    let detail = `${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string; message?: string };
+      detail = b.message ?? b.error ?? detail;
+    } catch {
+      // A non-JSON error body is still an error.
+    }
+    throw new ApiError(res.status, `${capability} failed: ${detail}`);
+  }
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new ApiError(res.status, `${capability}: the response could not be read, so the result is unknown`);
+  }
+}

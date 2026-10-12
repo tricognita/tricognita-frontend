@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { verifySession, sessionCookieName, ROLES, type Role } from "@/lib/auth";
 import { canSeeTenant } from "@/lib/tenant-assign";
+import { recordServerAuditEvent } from "@/lib/server-audit";
 import {
   updateRole, setStatus, sanitize, findByEmail, findById,
   updateModules, updatePlan, deleteUser,
@@ -70,6 +71,7 @@ export async function PUT(
     try {
       const updated = await updateRole(id, role);
       if (!updated) return Response.json({ error: "not_found" }, { status: 404 });
+      await recordServerAuditEvent({ email: gate.selfEmail, tenantId: gate.tenantId, role: "ADMIN" }, "role.changed", { target: updated.email, role });
       return Response.json({ user: sanitize(updated) });
     } catch (err) {
       if (err instanceof Error && err.message === "last_admin") return lastAdminResponse();
@@ -88,6 +90,7 @@ export async function PUT(
     try {
       const updated = await setStatus(id, status);
       if (!updated) return Response.json({ error: "not_found" }, { status: 404 });
+      await recordServerAuditEvent({ email: gate.selfEmail, tenantId: gate.tenantId, role: "ADMIN" }, "user.status_changed", { target: updated.email, status });
       return Response.json({ user: sanitize(updated) });
     } catch (err) {
       if (err instanceof Error && err.message === "last_admin") return lastAdminResponse();
@@ -211,6 +214,7 @@ export async function DELETE(
   try {
     const ok = await deleteUser(id);
     if (!ok) return Response.json({ error: "not_found" }, { status: 404 });
+    await recordServerAuditEvent({ email: gate.selfEmail, tenantId: gate.tenantId, role: "ADMIN" }, "user.removed", { target_id: id });
     return Response.json({ deleted: true });
   } catch (err) {
     if (err instanceof Error && err.message === "last_admin") return lastAdminResponse();

@@ -52,7 +52,7 @@ export const defaultUpstreamDeps: UpstreamDeps = {
 
 export interface UpstreamCall {
   path: string;
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "DELETE" | "PATCH";
   timeoutMs?: number;
   body?: string;
   contentType?: string;

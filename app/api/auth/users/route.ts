@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { verifySession, sessionCookieName, ROLES, type Role } from "@/lib/auth";
 import { listUsers, inviteUser, sanitize, type UserPlan } from "@/lib/users";
 import { notifyUserInvited } from "@/lib/notify";
+import { recordServerAuditEvent } from "@/lib/server-audit";
 import { resolveInviteTenant, canSeeTenant } from "@/lib/tenant-assign";
 
 export const runtime = "nodejs";
@@ -70,6 +71,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const user = await inviteUser({ email, name, role, plan, modules, tenantId: tenant.tenantId });
     notifyUserInvited(name, email, role, session.email || "admin").catch(() => {});
+    await recordServerAuditEvent(session, "user.invited", { invited: email, role, tenant: tenant.tenantId });
     return Response.json({ user: sanitize(user) }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
