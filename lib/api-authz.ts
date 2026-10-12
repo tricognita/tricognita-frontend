@@ -158,6 +158,7 @@ export const AUTHENTICATED_API = [
                                     // can't split them. Handler is the real gate.
   "/api/email-logs",
   "/api/usage",
+  "/api/onboarding/status", // tenant from the session, returns checklist booleans only (no tenant data)
   // broadly-readable feature endpoints (current behaviour preserved; candidates
   // for per-route tightening in a later milestone)
   "/api/age/graph",

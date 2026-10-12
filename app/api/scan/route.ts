@@ -1,5 +1,5 @@
 import { GO_API } from "@/lib/jit-secret";
-import { backendUnreachable, interpretUpstream, validateFleetScan } from "@/lib/bff-upstream";
+import { backendUnreachable, interpretUpstream, stripScanOutput, validateFleetScan } from "@/lib/bff-upstream";
 import { recordEvent } from "@/lib/datasets";
 import { notifyScanComplete } from "@/lib/notify";
 import { authedRoute, logRoute } from "@/lib/bff-log";
@@ -123,6 +123,7 @@ async function runScan({
     upstream,
     {
       validate: validateFleetScan,
+      transform: stripScanOutput,
       onSuccess: async (_s, body) => {
         const report = (body as { report: { findings: Array<{ severity?: string }> } }).report;
         const findings = report.findings.length;

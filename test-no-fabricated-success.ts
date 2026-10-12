@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
   callUpstream, interpretUpstream, persistClientAuditEvent, notImplemented,
-  validateFleetScan, validateIacScan, validateK8sAudit, validateThreatIntel,
+  validateFleetScan, stripScanOutput, validateIacScan, validateK8sAudit, validateThreatIntel,
   type UpstreamDeps, type UpstreamSession,
 } from "./lib/bff-upstream";
 
@@ -66,7 +66,8 @@ function deps(o: { session?: UpstreamSession | null; secret?: boolean; upstream?
     let side = 0;
     const r = await callUpstream({ path: "/x", method: "POST", onSuccess: () => { side++; } },
       deps({ upstream: async () => Response.json({ error: "db_down" }, { status: 500 }) }).d);
-    ok(r.status === 500 && (await r.json()).error === "db_down" && side === 0, "upstream 500 relayed, no side effect");
+    const b5 = await r.json();
+    ok(r.status === 500 && b5.error === "backend_error" && side === 0, "upstream 500 => generic backend_error, no side effect");
   }
   {
     const r = await callUpstream({ path: "/x" }, deps({ upstream: async () => new Response("<html>bad gateway</html>", { status: 502 }) }).d);
@@ -95,6 +96,42 @@ function deps(o: { session?: UpstreamSession | null; secret?: boolean; upstream?
   {
     const r = await callUpstream({ path: "/x", onSuccess: () => { throw new Error("slack down"); } }, deps({}).d);
     ok(r.status === 200, "a failing notification never turns a verified success into an error");
+  }
+
+  // --- Sensitive output never reaches the browser ---
+  {
+    const origErr = console.error; const logged: string[] = []; console.error = (...a: unknown[]) => { logged.push(a.join(" ")); };
+    const leak = "AWS_SECRET_ACCESS_KEY=AKIAFAKE /opt/scan.sh: line 9: boom";
+    const r = await callUpstream({ path: "/api/scan", method: "POST" }, deps({ upstream: async () => Response.json({ error: "scan failed", detail: leak, stack: "goroutine 1" }, { status: 500 }) }).d);
+    console.error = origErr;
+    const txt = JSON.stringify(await r.json());
+    ok(r.status === 500 && !txt.includes("AKIAFAKE") && !txt.includes("goroutine") && !txt.includes("scan.sh") && !txt.includes("scan failed"), "Go 5xx detail/stack never reaches the browser");
+    ok(logged.length === 1 && logged[0].includes("upstream 500"), "5xx diagnostics are logged server-side only (one truncated line)");
+    const r4 = await callUpstream({ path: "/x" }, deps({ upstream: async () => Response.json({ error: "quota_exceeded", retry_after: 30, detail: leak, script_output: leak }, { status: 429 }) }).d);
+    const b4 = await r4.json();
+    ok(r4.status === 429 && b4.error === "quota_exceeded" && b4.retry_after === 30 && b4.detail === undefined && b4.script_output === undefined, "4xx keeps its error/fields but loses internal keys");
+    const okScan = stripScanOutput({ report: { findings: [] }, script_output: leak }) as Record<string, unknown>;
+    ok(okScan.script_output === undefined && okScan.report !== undefined, "successful scan result drops raw scanner output");
+  }
+
+  // --- direct_access_denied is an outage, genuine 403s are not ---
+  {
+    const r = await callUpstream({ path: "/x" }, deps({ upstream: async () => Response.json({ error: "direct_access_denied" }, { status: 403 }) }).d);
+    const b = await r.json();
+    ok(r.status === 502 && b.error === "api_origin_rejected" && !JSON.stringify(b).toLowerCase().includes("cloudflare"), "direct_access_denied => 502 api_origin_rejected (no infrastructure detail)");
+    const real = await callUpstream({ path: "/x" }, deps({ upstream: async () => Response.json({ error: "mfa_required" }, { status: 403 }) }).d);
+    ok(real.status === 403 && (await real.json()).error === "mfa_required", "genuine 403 (mfa_required) stays 403");
+  }
+
+  // --- 202/204 and empty bodies ---
+  {
+    let side = 0;
+    const r204 = await callUpstream({ path: "/x", method: "POST", onSuccess: () => { side++; } }, deps({ upstream: async () => new Response(null, { status: 204 }) }).d);
+    ok(r204.status === 204 && side === 1, "204 is a success with no body; side effect runs once");
+    const r200e = await callUpstream({ path: "/x", method: "POST" }, deps({ upstream: async () => new Response("", { status: 200 }) }).d);
+    ok(r200e.status === 200, "empty 200 on a route without a required result is relayed as 200");
+    const rv = await callUpstream({ path: "/x", validate: validateFleetScan }, deps({ upstream: async () => new Response(null, { status: 204 }) }).d);
+    ok(rv.status === 502, "empty 2xx on a route that requires a result => 502");
   }
 
   // --- Go answers approve/terminate with 202 {status:"enqueued", job_id}: relayed as-is, not rewritten to "approved"/"terminated" ---

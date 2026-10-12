@@ -62,6 +62,8 @@ export interface UpstreamCall {
   headers?: Record<string, string>;
   /** Returns a reason string when a 2xx body is not a complete, usable result. */
   validate?: (body: unknown) => string | null;
+  /** Shapes the body the browser receives (e.g. drop scanner output). Runs after onSuccess. */
+  transform?: (body: unknown) => unknown;
   /** Side effects that are only valid after a verified 2xx. Errors are swallowed. */
   onSuccess?: (session: UpstreamSession, body: unknown) => void | Promise<void>;
 }
@@ -123,13 +125,59 @@ export async function callUpstream(
   return interpretUpstream(upstream, call, session);
 }
 
+// Keys that may carry scanner/process output or internals. Never relayed to a browser.
+const INTERNAL_KEYS = new Set(["detail", "details", "stack", "trace", "script_output", "output", "debug", "cause"]);
+
+function safeString(v: unknown, max = 300): string | undefined {
+  return typeof v === "string" ? v.slice(0, max) : undefined;
+}
+
+/**
+ * Maps a non-2xx upstream answer to what the browser may see.
+ *  - Go 403 `direct_access_denied` is the origin gate rejecting the BFF, not a
+ *    user authorization answer: report it as an outage (same code as
+ *    lib/bff-log's originRejectionAsOutage on the MFA/origin branch).
+ *  - 5xx: a generic error. The upstream body (which can hold scanner output) is
+ *    logged server-side only, truncated, and never forwarded.
+ *  - other 4xx: genuine refusals keep their status and their error/message text;
+ *    internal keys are stripped.
+ */
+export function refusalFor(status: number, body: unknown): Response {
+  const obj = body !== null && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+  if (status === 403 && obj?.error === "direct_access_denied") {
+    return Response.json(
+      { error: "api_origin_rejected", message: "The API refused this server's request. This is an outage, not a permissions answer." },
+      { status: 502 },
+    );
+  }
+  if (status >= 500) {
+    console.error(
+      `[bff-upstream] upstream ${status}: ${safeString(obj?.error, 200) ?? "no error text"}` +
+        (safeString(obj?.detail, 500) ? ` detail=${JSON.stringify(safeString(obj?.detail, 500))}` : ""),
+    );
+    return Response.json(
+      { error: "backend_error", message: "The Tricognita API failed to complete this request.", upstream_status: status },
+      { status },
+    );
+  }
+  if (obj) {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) if (!INTERNAL_KEYS.has(k)) clean[k] = v;
+    return Response.json(clean, { status });
+  }
+  return Response.json(
+    { error: "backend_error", message: "The Tricognita API rejected the request.", upstream_status: status },
+    { status: status >= 400 ? status : 502 },
+  );
+}
+
 /**
  * Steps 4-6 of the contract, split out so routes that need their own quota or
  * header handling (POST /api/scan) share the exact same success rules.
  */
 export async function interpretUpstream(
   upstream: Response,
-  call: Pick<UpstreamCall, "validate" | "onSuccess">,
+  call: Pick<UpstreamCall, "validate" | "onSuccess" | "transform">,
   session: UpstreamSession,
 ): Promise<Response> {
   let text: string;
@@ -147,16 +195,23 @@ export async function interpretUpstream(
   }
 
   if (!upstream.ok) {
-    // Genuine upstream refusals (401/403/404/409/429/5xx) are relayed with their status.
-    if (isJson && parsed !== null && typeof parsed === "object") {
-      return Response.json(parsed, { status: upstream.status });
-    }
-    return Response.json(
-      { error: "backend_error", message: "The Tricognita API rejected the request.", upstream_status: upstream.status },
-      { status: upstream.status >= 400 ? upstream.status : 502 },
-    );
+    return refusalFor(upstream.status, isJson ? parsed : undefined);
   }
 
+  // A confirmed 2xx with no body (204, or an empty 200/202) is a real success with
+  // nothing to relay, unless the route requires a result body.
+  if (text.trim() === "") {
+    if (call.validate) {
+      return Response.json(
+        { error: "incomplete_result", message: "The Tricognita API returned an empty result. Nothing is reported as done." },
+        { status: 502 },
+      );
+    }
+    if (call.onSuccess) {
+      try { await call.onSuccess(session, null); } catch { /* never alters a verified result */ }
+    }
+    return new Response(null, { status: upstream.status });
+  }
   if (!isJson) {
     return Response.json(
       { error: "backend_error", message: "The Tricognita API returned an unreadable response; the result is unknown." },
@@ -178,10 +233,19 @@ export async function interpretUpstream(
       /* side effects must never alter a verified result */
     }
   }
-  return Response.json(parsed, { status: upstream.status });
+  const out = call.transform ? call.transform(parsed) : parsed;
+  return Response.json(out, { status: upstream.status });
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
+
+/** Removes raw scanner process output from a fleet-scan result before it reaches a browser. */
+export function stripScanOutput(body: unknown): unknown {
+  if (!isObj(body)) return body;
+  const { script_output: _omit, ...rest } = body;
+  void _omit;
+  return rest;
+}
 
 /** /api/scan: must carry the scanner report with an explicit findings array. */
 export function validateFleetScan(body: unknown): string | null {
