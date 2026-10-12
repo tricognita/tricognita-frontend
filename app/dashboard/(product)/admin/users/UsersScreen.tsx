@@ -114,7 +114,13 @@ function UserCard({ user, selfEmail, onChanged }: { user: UserRow; selfEmail: st
               className={INPUT + " !w-auto"}
               value={user.role}
               disabled={busy || self}
-              onChange={(e) => void run("Role change", async () => { await changeUserRole(user.id, e.target.value); return `Role is now ${e.target.value}.`; })}
+              onChange={(e) => {
+                const next = e.target.value; // read before awaiting: a controlled select reverts until the list refreshes
+                void run("Role change", async () => {
+                  await changeUserRole(user.id, next);
+                  return `Role is now ${next}.`;
+                });
+              }}
             >
               {Array.from(new Set([user.role, ...ROLES])).map((r) => (
                 <option key={r} value={r}>
