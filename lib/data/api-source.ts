@@ -17,8 +17,10 @@ import {
   verifyControl,
 } from "@/lib/api/controls";
 import { fetchVerificationRuns } from "@/lib/api/assurance";
+import { fetchFinding, fetchFindings } from "@/lib/api/findings";
 import { fetchCloudAccounts } from "@/lib/api/accounts";
 import { fetchEvidence } from "@/lib/api/evidence";
+import { fetchAuditEvents } from "@/lib/api/audit";
 import { fetchAssuranceRecord } from "@/lib/api/assurance-record";
 import {
   approveManualRemediation,
@@ -83,8 +85,8 @@ export const apiSource: DataSource = {
   getControlResults: fetchControlResults,
   getControlHistory: fetchControlHistory,
 
-  getFindings: () => pending("findings"),
-  getFinding: () => pending("findings"),
+  getFindings: fetchFindings,
+  getFinding: fetchFinding,
 
   getResources: fetchResources,
 
@@ -107,6 +109,7 @@ export const apiSource: DataSource = {
   executeRemediation: executeRemediationApi,
   verifyControl: verifyControl,
   getEvidence: fetchEvidence,
+  getAuditEvents: fetchAuditEvents,
   getAssuranceRecord: fetchAssuranceRecord,
   getManualRemediations: fetchManualRemediations,
   proposeManualRemediation,

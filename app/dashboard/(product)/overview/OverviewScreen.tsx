@@ -104,13 +104,17 @@ export function OverviewScreen() {
   const nextAt = controls.data ? nextVerificationAt(controls.data) : undefined;
   const connectedAccounts = accounts.data?.filter((a) => a.connection === "CONNECTED").length ?? 0;
 
+  // Drift and exceptions are not served by the backend yet (they report "unavailable"),
+  // and that must not hide the failing controls: with them missing, the list is built from
+  // what IS known. Requiring them used to produce "Nothing needs attention" over five
+  // failing controls.
   const attention =
-    controls.data && drift.data && exceptions.data && remediations.data
+    controls.data
       ? attentionItems({
           controls: controls.data,
-          drift: drift.data,
-          exceptions: exceptions.data,
-          remediations: remediations.data,
+          drift: drift.data ?? [],
+          exceptions: exceptions.data ?? [],
+          remediations: remediations.data ?? [],
           accounts: accounts.data,
           resources: resources.data,
         })

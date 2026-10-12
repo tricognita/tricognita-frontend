@@ -122,6 +122,7 @@ export function OnboardingChecklist({ tenantId, onScanCta }: OnboardingChecklist
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: effect syncs from localStorage / a one-shot scan event
     if (checkDismissed(tenantId)) { setDismissed(true); return; }
     setDismissed(false);
     setSteps(loadSteps(tenantId));

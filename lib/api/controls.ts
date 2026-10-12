@@ -31,6 +31,17 @@ export async function fetchControlResults(controlId: string): Promise<ControlRes
   return (body.results ?? []).map(toControlResult);
 }
 
+/** Current results plus the resources they refer to, in one request. */
+export async function fetchControlResultsWithResources(
+  controlId: string,
+): Promise<{ results: ControlResult[]; resources: Resource[] }> {
+  const body = await apiGet<ResultsBody>(
+    `/api/controls/${encodeURIComponent(controlId)}/results`,
+    "control results",
+  );
+  return { results: (body.results ?? []).map(toControlResult), resources: (body.resources ?? []).map(toResource) };
+}
+
 /** Every recorded result for one control, newest first. */
 export async function fetchControlHistory(controlId: string): Promise<ControlResult[]> {
   const body = await apiGet<ResultsBody>(

@@ -73,6 +73,7 @@ export function ScanProgressBar({ demoScanState, onScanComplete }: ScanProgressB
     const nowComplete = liveStatus.status === "complete";
     if (wasScanning && nowComplete) {
       mutate("/api/findings");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: effect syncs from localStorage / a one-shot scan event
       setShowComplete(true);
       onScanComplete?.(liveStatus.findings_count ?? 0);
       const t = setTimeout(() => setShowComplete(false), 5000);
@@ -84,6 +85,7 @@ export function ScanProgressBar({ demoScanState, onScanComplete }: ScanProgressB
   // Demo mode: trigger on demo done
   useEffect(() => {
     if (demoScanState?.done && !completeFired) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: effect syncs from localStorage / a one-shot scan event
       setCompleteFired(true);
       mutate("/api/findings");
       setShowComplete(true);

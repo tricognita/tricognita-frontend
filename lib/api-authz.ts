@@ -90,6 +90,7 @@ export const SECOPS_API = [
   "/api/threatintel/lookup",
   "/api/k8s/audit",
   "/api/credentials",
+  "/api/assessments",
   // Remediation (bounded). The edge grants the SECOPS tier; the precise
   // capability is enforced per operation in the BFF route, which is the only
   // layer that knows whether this is a read, a request or an approval.
@@ -105,12 +106,24 @@ export const SECOPS_API = [
   "/api/aria/threat-intel",
 ];
 
+// Operator-only surfaces: cross-tenant rollups, platform administration, the founder inbox,
+// datasets. ADMIN is the highest role *inside a tenant*, so a customer's administrator holds it too;
+// these routes therefore also require the session to belong to the platform tenant. (The per-handler
+// checks only looked at the role, which let a customer admin read every tenant's commercial and
+// pilot-health rows.)
+export const PLATFORM_ONLY_API = ["/api/admin/", "/api/organizations", "/api/datasets"];
+
+export function isPlatformOnlyApi(path: string): boolean {
+  return PLATFORM_ONLY_API.some((p) => path === p.replace(/\/$/, "") || path.startsWith(p));
+}
+
 // API paths requiring ADMIN, SECOPS, or AUDITOR (read-only compliance).
 export const AUDITOR_API = [
   "/api/guard/stats",
   "/api/guard/interactions",
   "/api/guard/report",
   "/api/audit-trail",
+  "/api/audit/events",   // the organisation's own trail; the Go API scopes it to the caller's tenant
   "/api/findings",
   "/api/cloud/resources",
   "/api/compliance/score",
@@ -158,6 +171,7 @@ export const AUTHENTICATED_API = [
                                     // can't split them. Handler is the real gate.
   "/api/email-logs",
   "/api/usage",
+  "/api/onboarding/status", // tenant from the session, returns checklist booleans only (no tenant data)
   // broadly-readable feature endpoints (current behaviour preserved; candidates
   // for per-route tightening in a later milestone)
   "/api/age/graph",

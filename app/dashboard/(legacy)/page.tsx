@@ -386,7 +386,6 @@ export default function DashboardPage() {
       const anyRes = res as {
         error?: string;
         message?: string;
-        simulated?: boolean;
         report?: {
           findings?: Finding[];
           report_id?: string;
@@ -398,22 +397,6 @@ export default function DashboardPage() {
 
       if (anyRes?.error) {
         throw new Error(anyRes.message ?? anyRes.error);
-      }
-      if (anyRes?.simulated === true) {
-        // Backend unreachable → /api/scan returned a simulated response. This
-        // is a partial-success: scan workflow ran, but the upstream is degraded.
-        queueOutput(
-          "SCAN COMPLETE (DEGRADED)",
-          "[!] Scan simulated — upstream backend unreachable.",
-          `[!] ${anyRes.message ?? "No findings detected."}`,
-        );
-        setScanState("partial");
-        void emitAuditEvent({
-          type: "scan.completed",
-          resource: "fleet",
-          metadata: { simulated: true, mode: "degraded" },
-        });
-        return;
       }
       if (anyRes?.report) {
         const r = anyRes.report;
