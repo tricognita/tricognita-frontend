@@ -30,7 +30,8 @@ const securityHeaders = [
       "default-src 'self'",
       // Cloudflare insights script is loaded by the Cloudflare proxy when
       // the route is served through cloudflare.com — keep allowlisted.
-      "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+      // React dev mode needs eval; never in production builds.
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://static.cloudflareinsights.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://avatars.githubusercontent.com",
@@ -43,7 +44,8 @@ const securityHeaders = [
       "manifest-src 'self'",        // explicit (defaults to self but document)
       "base-uri 'self'",
       "form-action 'self'",
-      "upgrade-insecure-requests",
+      // Upgrading localhost http to https breaks `next dev`; production always keeps it.
+      ...(process.env.NODE_ENV === "production" ? ["upgrade-insecure-requests"] : []),
     ].join("; "),
   },
   // 2-year HSTS, includeSubDomains, preload-eligible.

@@ -90,6 +90,7 @@ export const SECOPS_API = [
   "/api/threatintel/lookup",
   "/api/k8s/audit",
   "/api/credentials",
+  "/api/assessments",
   // Remediation (bounded). The edge grants the SECOPS tier; the precise
   // capability is enforced per operation in the BFF route, which is the only
   // layer that knows whether this is a read, a request or an approval.
@@ -176,6 +177,10 @@ export const AUTHENTICATED_API = [
 export const MUTATION_POLICY: Array<{ prefix: string; roles: Role[] }> = [
   { prefix: "/api/alert-routes", roles: ["ADMIN", "SECOPS"] },
   { prefix: "/api/api-keys",     roles: ["ADMIN"] },
+  // Connecting, testing and disconnecting a cloud account is ADMIN-only (rbac manageCloudAccounts).
+  { prefix: "/api/credentials",  roles: ["ADMIN"] },
+  // Running a verification matches rbac runVerification.
+  { prefix: "/api/assessments",  roles: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
 ];
 
 const SAFE_METHODS = new Set(["GET", "HEAD"]);

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   AuthorizingState,
   Button,
   Card,
+  ConfirmDangerous,
   DateTime,
   EmptyState,
   HStack,
@@ -19,7 +21,8 @@ import { useCloudAccounts } from "@/lib/data";
 import { canDo } from "@/lib/rbac";
 import { useSession } from "@/lib/use-session";
 import { QueryBoundary } from "../admin/QueryBoundary";
-import { NoMutationNote } from "../admin/NoMutationNote";
+import { disconnectAccount, runAssessment, testConnection } from "@/lib/api/cloud-onboarding";
+import { ConnectAccountPanel } from "./ConnectAccountPanel";
 
 /**
  * Cloud accounts — what Tricognita can read, and what it cannot.
@@ -33,11 +36,50 @@ import { NoMutationNote } from "../admin/NoMutationNote";
  * customer's results: those controls come back Not assessed, never Passing.
  */
 
-const NO_API =
-  "Connecting, disconnecting and re-checking an account arrive with the cloud-account API.";
-
-function AccountRow({ account, mayManage }: { account: CloudAccount; mayManage: boolean }) {
+function AccountRow({
+  account,
+  mayManage,
+  onChanged,
+}: {
+  account: CloudAccount;
+  mayManage: boolean;
+  onChanged: () => void;
+}) {
   const healthy = account.connection === "CONNECTED";
+  const [busy, setBusy] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<{ ok: boolean; text: string } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
+  async function run(what: string, fn: () => Promise<{ ok: boolean; text: string }>) {
+    setBusy(what);
+    setOutcome(null);
+    try {
+      setOutcome(await fn());
+    } catch (e) {
+      setOutcome({ ok: false, text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setBusy(null);
+      onChanged();
+    }
+  }
+
+  const recheck = () =>
+    run("Re-checking", async () => {
+      const t = await testConnection(account.id);
+      return t.ok
+        ? { ok: true, text: `The connection works${t.identity ? ` (${t.identity})` : ""}.` }
+        : { ok: false, text: `The provider refused the connection: ${t.error ?? "no reason given"}` };
+    });
+  const verify = () =>
+    run("Verifying", async () => {
+      const r = await runAssessment(account.id);
+      return r.state === "VERIFIED"
+        ? {
+            ok: true,
+            text: `Verified: ${r.controlsEvaluated} controls evaluated across ${r.resourcesDiscovered} resources (${r.passed} passing, ${r.failed} failing, ${r.drifted} drifted, ${r.notAssessed} not assessed).${r.discoveryWarning ? " " + r.discoveryWarning : ""}`,
+          }
+        : { ok: false, text: `The verification did not complete: ${r.failureReason ?? "no reason given"}.` };
+    });
   return (
     <Card>
       <VStack gap="sm">
@@ -99,14 +141,42 @@ function AccountRow({ account, mayManage }: { account: CloudAccount; mayManage: 
         )}
 
         {mayManage && (
-          <HStack gap="sm" align="center" className="flex-wrap">
-            <Button variant="secondary" size="sm" disabled title={NO_API}>
-              Re-check connection
-            </Button>
-            <Button variant="ghost" size="sm" disabled title={NO_API}>
-              Disconnect
-            </Button>
-          </HStack>
+          <VStack gap="xs">
+            <HStack gap="sm" align="center" className="flex-wrap">
+              <Button size="sm" disabled={busy !== null} onClick={() => void verify()}>
+                Verify now
+              </Button>
+              <Button variant="secondary" size="sm" disabled={busy !== null} onClick={() => void recheck()}>
+                Re-check connection
+              </Button>
+              <Button variant="ghost" size="sm" disabled={busy !== null} onClick={() => setConfirming(true)}>
+                Disconnect
+              </Button>
+            </HStack>
+            <div aria-live="polite" className="text-[var(--text-xs)]">
+              {busy && <p className="text-[var(--fg-muted)]">{busy}…</p>}
+              {outcome && (
+                <p role={outcome.ok ? "status" : "alert"} className="text-[var(--fg)] break-words">
+                  {outcome.text}
+                </p>
+              )}
+            </div>
+            <ConfirmDangerous
+              open={confirming}
+              onClose={() => setConfirming(false)}
+              title={`Disconnect ${account.alias}`}
+              description="Tricognita stops reading this account and deletes the stored connection. Existing results and evidence are kept."
+              confirmPhrase="DISCONNECT"
+              confirmLabel="Disconnect"
+              onConfirm={async () => {
+                setConfirming(false);
+                await run("Disconnecting", async () => {
+                  await disconnectAccount(account.id);
+                  return { ok: true, text: "Disconnected." };
+                });
+              }}
+            />
+          </VStack>
         )}
       </VStack>
     </Card>
@@ -116,6 +186,7 @@ function AccountRow({ account, mayManage }: { account: CloudAccount; mayManage: 
 export function CloudAccountsScreen() {
   const { role, isLoading: sessionLoading } = useSession();
   const accounts = useCloudAccounts();
+  const [connecting, setConnecting] = useState(false);
 
   // The capability cannot be evaluated until the role is known, and the
   // protected surface must not render while the answer is outstanding.
@@ -138,7 +209,16 @@ export function CloudAccountsScreen() {
         description="The accounts Tricognita reads to verify your controls, and how cleanly it can read each one."
       />
 
-      {mayManage && <NoMutationNote what={NO_API} />}
+      {mayManage && !connecting && (
+        <HStack gap="sm">
+          <Button size="sm" onClick={() => setConnecting(true)}>
+            Connect an account
+          </Button>
+        </HStack>
+      )}
+      {mayManage && connecting && (
+        <ConnectAccountPanel onChanged={accounts.refresh} onClose={() => setConnecting(false)} />
+      )}
 
       <Section
         eyebrow="Connected"
@@ -155,13 +235,17 @@ export function CloudAccountsScreen() {
               <EmptyState
                 variant="bordered"
                 title="No cloud account connected"
-                description="Tricognita verifies nothing until an account is connected during onboarding."
+                description={
+                  mayManage
+                    ? "Tricognita verifies nothing until an account is connected. Use Connect an account."
+                    : "Tricognita verifies nothing until an administrator connects an account."
+                }
               />
             ) : (
               <ul className="flex flex-col gap-2">
                 {accountsByAttention(data).map((a) => (
                   <li key={a.id}>
-                    <AccountRow account={a} mayManage={mayManage} />
+                    <AccountRow account={a} mayManage={mayManage} onChanged={accounts.refresh} />
                   </li>
                 ))}
               </ul>
