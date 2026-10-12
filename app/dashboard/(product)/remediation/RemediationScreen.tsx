@@ -3,6 +3,9 @@
 import Link from "next/link";
 import {
   AuthorizingState,
+  Card,
+  DateTime,
+  EmptyState,
   HStack,
   NotAuthorizedState,
   PageHeader,
@@ -15,7 +18,8 @@ import {
   remediationsNeedingAction,
   type Remediation,
 } from "@/lib/domain";
-import { useControls, useFindings, useRemediations, useResources } from "@/lib/data";
+import { useControls, useFindings, useManualRemediations, useRemediations, useResources } from "@/lib/data";
+import { RECORD_OUTCOME, isManualRemediationOpen, manualNextStep, type ManualRemediation } from "@/lib/domain";
 import { canDo } from "@/lib/rbac";
 import { useSession } from "@/lib/use-session";
 import { QueryBoundary, SkeletonRows } from "./QueryBoundary";
@@ -32,6 +36,7 @@ import { RemediationActions } from "./RemediationActions";
 export function RemediationScreen() {
   const { role, isLoading: sessionLoading } = useSession();
   const remediations = useRemediations();
+  const manual = useManualRemediations();
   const controls = useControls();
   const findings = useFindings();
   const resources = useResources();
@@ -52,8 +57,10 @@ export function RemediationScreen() {
   }
 
   const waiting = remediations.data
-    ? remediationsNeedingAction(remediationQueue(remediations.data))
+    ? remediationsNeedingAction(remediationQueue(remediations.data)) +
+      (manual.data ? manual.data.filter(isManualRemediationOpen).length : 0)
     : undefined;
+  const onRecord = (remediations.data?.length ?? 0) + (manual.data?.length ?? 0);
 
   return (
     <VStack gap="lg">
@@ -63,7 +70,7 @@ export function RemediationScreen() {
         meta={
           typeof waiting === "number" ? (
             <span>
-              {waiting} waiting on someone · {remediations.data?.length ?? 0} on record
+              {waiting} waiting on someone · {onRecord} on record
             </span>
           ) : null
         }
@@ -90,6 +97,8 @@ export function RemediationScreen() {
         )}
       </QueryBoundary>
 
+      <ManualList manual={manual} />
+
       <nav aria-label="Related surfaces">
         <HStack gap="lg" className="flex-wrap">
           <Link
@@ -106,6 +115,66 @@ export function RemediationScreen() {
           </Link>
         </HStack>
       </nav>
+    </VStack>
+  );
+}
+
+const NEXT_LABEL: Record<NonNullable<ReturnType<typeof manualNextStep>>, string> = {
+  approve: "Waiting for a second person to approve",
+  applied: "Approved: waiting for the change to be applied and recorded",
+  verify: "Applied: waiting for Tricognita's check",
+};
+
+/** Fixes the customer applies themselves, from the real record. Shown beside the automated queue. */
+function ManualList({ manual }: { manual: ReturnType<typeof useManualRemediations> }) {
+  if (manual.unavailable) return null;
+  if (manual.isLoading) return <Skeleton className="h-16 w-full" />;
+  if (manual.error) {
+    return (
+      <p role="alert" className="text-[var(--text-xs)] text-[var(--fg)]">
+        The fixes you apply yourself could not be loaded: {manual.error.message}
+      </p>
+    );
+  }
+  const items: ManualRemediation[] = manual.data ?? [];
+  return (
+    <VStack gap="sm">
+      <h2 className="text-[var(--text-sm)] font-medium text-[var(--fg)]">Fixes you apply yourself</h2>
+      {items.length === 0 ? (
+        <EmptyState
+          variant="bordered"
+          title="No customer-applied fix on record"
+          description="Propose one from a failing control. It is approved by a second person, applied by your team, then checked by Tricognita."
+        />
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {items.map((r) => {
+            const next = manualNextStep(r);
+            return (
+              <li key={r.id}>
+                <Card>
+                  <VStack gap="xs">
+                    <HStack gap="sm" justify="between" align="start" className="flex-wrap">
+                      <Link
+                        href={`/dashboard/controls/${r.controlId}`}
+                        className="text-[var(--text-sm)] font-medium text-[var(--fg)] underline underline-offset-2"
+                      >
+                        {r.controlId} · {r.resourceLabel}
+                      </Link>
+                      <span className="text-[var(--text-xs)] text-[var(--fg)]">{RECORD_OUTCOME[r.outcome].label}</span>
+                    </HStack>
+                    <p className="text-[var(--text-xs)] text-[var(--fg-muted)] break-words">{r.proposal.change}</p>
+                    <p className="text-[var(--text-xs)] text-[var(--fg)]">
+                      {next ? NEXT_LABEL[next] : "Checked by Tricognita."} · proposed by {r.proposal.proposedBy},{" "}
+                      <DateTime value={r.proposal.proposedAt} variant="both" />
+                    </p>
+                  </VStack>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </VStack>
   );
 }
