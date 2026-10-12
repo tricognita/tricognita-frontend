@@ -1,6 +1,6 @@
 // Cloud-account onboarding: authorization policy, honest findings derivation, and no fabricated deletion/creation.
 // Run: node --import tsx test-cloud-onboarding.ts   (env as for test-no-fabricated-success.ts)
-import { apiRequiredRoles, roleMayCallApi } from "./lib/api-authz";
+import { apiRequiredRoles, roleMayCallApi, isPlatformOnlyApi } from "./lib/api-authz";
 import { callUpstream, type UpstreamDeps } from "./lib/bff-upstream";
 
 let failed = 0;
@@ -18,6 +18,14 @@ ok(roleMayCallApi("SECOPS", "/api/assessments", "POST"), "SECOPS can run a verif
 ok(!roleMayCallApi("AUDITOR", "/api/assessments", "POST"), "AUDITOR cannot run a verification");
 ok(!roleMayCallApi("DESIGNER", "/api/assessments", "POST") && !roleMayCallApi("DESIGNER", "/api/credentials", "POST"), "DESIGNER cannot connect or verify");
 ok(apiRequiredRoles("/api/assessments", "POST") !== "deny", "/api/assessments is classified (not fail-closed deny)");
+
+// --- Operator-only surfaces are not reachable by a customer's administrator (the edge adds the tenant check) ---
+for (const p of ["/api/admin/commercial", "/api/admin/pilot-health", "/api/admin/leads", "/api/admin/platform/tenants", "/api/organizations", "/api/datasets/export"]) {
+  ok(isPlatformOnlyApi(p), `${p} is platform-only`);
+}
+for (const p of ["/api/credentials", "/api/auth/users", "/api/audit/events", "/api/cloud-accounts", "/api/administrators"]) {
+  ok(!isPlatformOnlyApi(p), `${p} stays tenant-level`);
+}
 
 // --- A deletion or creation is reported only when the backend confirmed it ---
 const SESSION = { email: "a@x.com", tenantId: "t1", role: "ADMIN" };

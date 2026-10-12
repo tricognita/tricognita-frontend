@@ -106,6 +106,17 @@ export const SECOPS_API = [
   "/api/aria/threat-intel",
 ];
 
+// Operator-only surfaces: cross-tenant rollups, platform administration, the founder inbox,
+// datasets. ADMIN is the highest role *inside a tenant*, so a customer's administrator holds it too;
+// these routes therefore also require the session to belong to the platform tenant. (The per-handler
+// checks only looked at the role, which let a customer admin read every tenant's commercial and
+// pilot-health rows.)
+export const PLATFORM_ONLY_API = ["/api/admin/", "/api/organizations", "/api/datasets"];
+
+export function isPlatformOnlyApi(path: string): boolean {
+  return PLATFORM_ONLY_API.some((p) => path === p.replace(/\/$/, "") || path.startsWith(p));
+}
+
 // API paths requiring ADMIN, SECOPS, or AUDITOR (read-only compliance).
 export const AUDITOR_API = [
   "/api/guard/stats",

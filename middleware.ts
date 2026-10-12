@@ -17,7 +17,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, isRoleAllowed, sessionCookieName } from "@/lib/auth";
-import { apiRequiredRoles, roleMayCallApi } from "@/lib/api-authz";
+import { apiRequiredRoles, roleMayCallApi, isPlatformOnlyApi } from "@/lib/api-authz";
+import { PLATFORM_TENANT } from "@/lib/tenant-assign";
 import { buildAllowedOrigins, isOriginAllowed } from "@/lib/csrf-origins";
 
 // ── Security headers added to every response ─────────────────────────────────
@@ -133,6 +134,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
             ? `Your role '${session.role}' cannot access this resource. Required: ${required.join(" or ")}.`
             : `Your role '${session.role}' cannot access this resource.`,
         },
+        { status: 403 }
+      ));
+    }
+
+    // Operator-only surfaces need the platform tenant as well as ADMIN.
+    if (isPlatformOnlyApi(pathname) && session.tenantId !== PLATFORM_TENANT) {
+      return sec(NextResponse.json(
+        { error: "forbidden", message: "This resource is available to the platform operator only." },
         { status: 403 }
       ));
     }
