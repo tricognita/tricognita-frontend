@@ -134,7 +134,12 @@ export function ARIADashboard() {
     actionInFlight.current.add(id);
     try {
       const res = await fetch(`/api/aria/actions/${encodeURIComponent(id)}/approve`, { method: "POST" });
-      const responseData = await res.json();
+      const responseData = await res.json().catch(() => ({}));
+      // A refused or failed request is not a decision: show it as failed, record no audit event.
+      if (!res.ok) {
+        setActionStatuses((prev) => ({ ...prev, [id]: "failed" }));
+        return;
+      }
       if (responseData.job_id) {
         setActionStatuses((prev) => ({ ...prev, [id]: "accepted" }));
         pollJob(responseData.job_id, id);
@@ -161,7 +166,12 @@ export function ARIADashboard() {
     actionInFlight.current.add(id);
     try {
       const res = await fetch(`/api/aria/actions/${encodeURIComponent(id)}/reject`, { method: "POST" });
-      const responseData = await res.json();
+      const responseData = await res.json().catch(() => ({}));
+      // A refused or failed request is not a decision: show it as failed, record no audit event.
+      if (!res.ok) {
+        setActionStatuses((prev) => ({ ...prev, [id]: "failed" }));
+        return;
+      }
       if (responseData.job_id) {
         setActionStatuses((prev) => ({ ...prev, [id]: "accepted" }));
         pollJob(responseData.job_id, id);
@@ -180,7 +190,11 @@ export function ARIADashboard() {
 
   async function handleTerminate(id: string) {
     const res = await fetch(`/api/aria/finops/${encodeURIComponent(id)}/terminate`, { method: "POST" });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setActionStatuses((prev) => ({ ...prev, [id]: "failed" }));
+      return;
+    }
     if (data.job_id) {
       pollJob(data.job_id, id);
     }

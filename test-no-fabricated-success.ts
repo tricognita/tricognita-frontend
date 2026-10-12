@@ -97,6 +97,22 @@ function deps(o: { session?: UpstreamSession | null; secret?: boolean; upstream?
     ok(r.status === 200, "a failing notification never turns a verified success into an error");
   }
 
+  // --- Go answers approve/terminate with 202 {status:"enqueued", job_id}: relayed as-is, not rewritten to "approved"/"terminated" ---
+  {
+    const r = await callUpstream({ path: "/api/aria/actions/1/approve", method: "POST" },
+      deps({ upstream: async () => Response.json({ status: "enqueued", job_id: "j1" }, { status: 202 }) }).d);
+    const b = await r.json();
+    ok(r.status === 202 && b.status === "enqueued" && b.job_id === "j1", "202 enqueued relayed verbatim (never rewritten to approved/terminated)");
+  }
+
+  // --- Dashboard handlers must not show success for a failed response ---
+  {
+    const src = readFileSync("app/dashboard/(legacy)/components/aria/ARIADashboard.tsx", "utf8");
+    ok((src.match(/if \(!res\.ok\)/g) ?? []).length >= 3, "ARIADashboard approve/reject/terminate check res.ok before showing a result");
+    const page = readFileSync("app/dashboard/(legacy)/page.tsx", "utf8");
+    ok(!/simulated/.test(page), "legacy dashboard has no simulated-result branch");
+  }
+
   // --- Scans: missing evidence / incomplete results are not "compliant" ---
   const scanCall = (body: unknown) => callUpstream({ path: "/api/scan", method: "POST", validate: validateFleetScan },
     deps({ upstream: async () => Response.json(body) }).d);

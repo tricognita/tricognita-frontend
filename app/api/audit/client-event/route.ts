@@ -104,7 +104,7 @@ export const POST = authedRoute(async ({ ctx, session, token, req }) => {
   // (502) instead of acknowledged; the BFF log line is a diagnostic, not the record.
   const persisted = await persistClientAuditEvent(auditRow, token, ctx.requestId);
   if (!persisted.ok) {
-    logRoute(ctx, "error", "audit.client_event.persist_failed", { reason: persisted.reason });
+    logRoute(ctx, "warn", "audit.client_event.persist_failed", { reason: persisted.reason });
     return ctx.errorJson({ error: "audit_not_persisted" }, 502);
   }
   return Response.json({ accepted: true });

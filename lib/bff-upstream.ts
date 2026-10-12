@@ -70,7 +70,7 @@ export function backendUnreachable(): Response {
   return Response.json(
     {
       error: "backend_unreachable",
-      message: "The Tricognita API is unreachable, so this operation was not performed. Retry shortly.",
+      message: "The Tricognita API did not answer, so the result of this request could not be confirmed. Check the item's status before retrying.",
     },
     { status: 502 },
   );
