@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { verifySession, sessionCookieName, ROLES, type Role } from "@/lib/auth";
+import { canSeeTenant } from "@/lib/tenant-assign";
 import {
   updateRole, setStatus, sanitize, findByEmail, findById,
   updateModules, updatePlan, deleteUser,
@@ -12,14 +13,24 @@ export const dynamic = "force-dynamic";
 const PLANS: UserPlan[] = ["free", "starter", "professional", "enterprise"];
 
 async function requireAdmin(): Promise<
-  { ok: true; selfEmail: string; selfId: string } | Response
+  { ok: true; selfEmail: string; selfId: string; tenantId: string } | Response
 > {
   const jar = await cookies();
   const session = await verifySession(jar.get(sessionCookieName())?.value);
   if (!session) return Response.json({ error: "unauthenticated" }, { status: 401 });
   if (session.role !== "ADMIN") return Response.json({ error: "forbidden" }, { status: 403 });
   const self = await findByEmail(session.email);
-  return { ok: true, selfEmail: session.email, selfId: self?.id ?? "" };
+  return { ok: true, selfEmail: session.email, selfId: self?.id ?? "", tenantId: session.tenantId };
+}
+
+// An admin may only manage users in their own tenant (platform admins: all).
+// A user in another tenant is reported as not_found so its existence is not revealed.
+async function scopedTarget(gate: { tenantId: string }, id: string): Promise<Response | null> {
+  const target = await findById(id);
+  if (!target || !canSeeTenant(gate.tenantId, target.tenantId)) {
+    return Response.json({ error: "not_found" }, { status: 404 });
+  }
+  return null;
 }
 
 function lastAdminResponse(): Response {
@@ -38,6 +49,8 @@ export async function PUT(
   const gate = await requireAdmin();
   if (gate instanceof Response) return gate;
   const { id } = await ctx.params;
+  const denied = await scopedTarget(gate, id);
+  if (denied) return denied;
 
   let body: { role?: string; status?: string; modules?: string[]; plan?: string };
   try {
@@ -112,6 +125,8 @@ export async function PATCH(
   const gate = await requireAdmin();
   if (gate instanceof Response) return gate;
   const { id } = await ctx.params;
+  const denied = await scopedTarget(gate, id);
+  if (denied) return denied;
 
   let body: { role?: string; plan?: string; modules?: string[]; status?: string };
   try {
@@ -185,6 +200,8 @@ export async function DELETE(
   const gate = await requireAdmin();
   if (gate instanceof Response) return gate;
   const { id } = await ctx.params;
+  const denied = await scopedTarget(gate, id);
+  if (denied) return denied;
 
   // Prevent self-deletion
   if (gate.selfId && gate.selfId === id) {

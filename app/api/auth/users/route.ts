@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { verifySession, sessionCookieName, ROLES, type Role } from "@/lib/auth";
 import { listUsers, inviteUser, sanitize, type UserPlan } from "@/lib/users";
 import { notifyUserInvited } from "@/lib/notify";
+import { resolveInviteTenant, canSeeTenant } from "@/lib/tenant-assign";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,24 +10,28 @@ export const dynamic = "force-dynamic";
 const PLANS: UserPlan[] = ["free", "starter", "professional", "enterprise"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-async function requireAdmin(): Promise<true | Response> {
+type AdminSession = NonNullable<Awaited<ReturnType<typeof verifySession>>>;
+
+async function requireAdmin(): Promise<AdminSession | Response> {
   const jar = await cookies();
   const session = await verifySession(jar.get(sessionCookieName())?.value);
   if (!session) return Response.json({ error: "unauthenticated" }, { status: 401 });
   if (session.role !== "ADMIN") return Response.json({ error: "forbidden" }, { status: 403 });
-  return true;
+  return session;
 }
 
 export async function GET(): Promise<Response> {
   const gate = await requireAdmin();
-  if (gate !== true) return gate;
-  const users = await listUsers();
+  if (gate instanceof Response) return gate;
+  // Platform admins see everyone; a customer's admin only sees their own tenant.
+  const users = (await listUsers()).filter((u) => canSeeTenant(gate.tenantId, u.tenantId));
   return Response.json({ users: users.map(sanitize) });
 }
 
 export async function POST(req: Request): Promise<Response> {
   const gate = await requireAdmin();
-  if (gate !== true) return gate;
+  if (gate instanceof Response) return gate;
+  const session = gate;
 
   let body: {
     email?: string;
@@ -35,6 +40,7 @@ export async function POST(req: Request): Promise<Response> {
     plan?: string;
     modules?: string[];
     password?: string;
+    tenantId?: string;
   };
   try {
     body = await req.json();
@@ -56,11 +62,14 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: "invalid_modules" }, { status: 400 });
   }
 
+  const tenant = resolveInviteTenant(session.tenantId, body.tenantId);
+  if (!tenant.ok) {
+    return Response.json({ error: tenant.error }, { status: tenant.error === "invalid_tenant" ? 400 : 403 });
+  }
+
   try {
-    const user = await inviteUser({ email, name, role, plan, modules });
-    const jar2 = await cookies();
-    const sess = await verifySession(jar2.get(sessionCookieName())?.value);
-    notifyUserInvited(name, email, role, sess?.email || "admin").catch(() => {});
+    const user = await inviteUser({ email, name, role, plan, modules, tenantId: tenant.tenantId });
+    notifyUserInvited(name, email, role, session.email || "admin").catch(() => {});
     return Response.json({ user: sanitize(user) }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

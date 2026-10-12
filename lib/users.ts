@@ -268,6 +268,8 @@ export async function inviteUser(input: {
   role: Role;
   plan?: UserPlan;
   modules?: string[];
+  /** Tenant for the new user. Callers MUST validate with resolveInviteTenant (lib/tenant-assign.ts). */
+  tenantId?: string;
 }): Promise<User> {
   await ensureSeed();
   return withLock(async () => {
@@ -282,7 +284,7 @@ export async function inviteUser(input: {
       name: input.name.trim(),
       role: input.role,
       plan: input.plan ?? "free",
-      tenantId: "tricognita-global",
+      tenantId: input.tenantId ?? "tricognita-global",
       status: "invite",
       salt: null,
       passwordHash: null,
