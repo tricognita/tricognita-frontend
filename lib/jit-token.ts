@@ -13,6 +13,8 @@ interface JITOptions {
   tenantId?: string;
   role?: string;
   scope?: string;
+  /** Override. Normally derived from the caller's verified session cookie; never from a client header. */
+  mfa?: boolean;
 }
 
 // JIT tier hierarchy (must match api/main.go tier constants):
@@ -48,7 +50,7 @@ function tierForRole(role: string | undefined): "AUTO" | "OPERATOR" | "DUAL_CONT
   }
 }
 
-function issueHMACToken(secret: string, options: JITOptions): string {
+function issueHMACToken(secret: string, options: JITOptions, mfa = false): string {
   const now = Math.floor(Date.now() / 1000);
   const tier = tierForRole(options.role);
   const payload = b64url(JSON.stringify({
@@ -57,6 +59,7 @@ function issueHMACToken(secret: string, options: JITOptions): string {
     role: options.role || "OPERATOR",
     scope: options.scope || "*",
     tier,
+    ...(mfa ? { mfa: true } : {}),
     iat: now,
     exp: now + TOKEN_TTL_S
   }));
@@ -64,6 +67,22 @@ function issueHMACToken(secret: string, options: JITOptions): string {
   const body = `${header}.${payload}`;
   const sig = b64url(createHmac("sha256", secret).update(body).digest());
   return `${body}.${sig}`;
+}
+
+// MFA state for the token comes only from the caller's signed session cookie, and only when
+// that session belongs to the same subject the token is for. Anything else (no request context,
+// cron/background callers, a different subject) yields false, which the Go API treats as "not
+// MFA-verified" and refuses for MFA-mandated principals (fail closed).
+async function sessionMfaFor(sub: string): Promise<boolean> {
+  try {
+    const { cookies } = await import("next/headers");
+    const { verifySession, sessionCookieName } = await import("./auth");
+    const jar = await cookies();
+    const session = await verifySession(jar.get(sessionCookieName())?.value);
+    return !!session && session.mfa === true && session.email.toLowerCase() === sub.toLowerCase();
+  } catch {
+    return false;
+  }
 }
 
 export async function getJitToken(optionsOrSub?: string | JITOptions): Promise<string> {
@@ -74,7 +93,8 @@ export async function getJitToken(optionsOrSub?: string | JITOptions): Promise<s
   try {
     const fallbackSecret = getRequiredEnv("SENTINEL_JIT_SECRET");
     if (fallbackSecret.length >= 32) {
-      return issueHMACToken(fallbackSecret, options);
+      const mfa = options.mfa ?? await sessionMfaFor(options.sub);
+      return issueHMACToken(fallbackSecret, options, mfa);
     }
   } catch (err) {
     // Ignore and try OIDC
