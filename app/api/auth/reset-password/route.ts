@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { verifySession, sessionCookieName, signSession, sessionCookieOptions } from "@/lib/auth";
 import { resetUserPassword } from "@/lib/users";
+import { recordServerAuditEvent } from "@/lib/server-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,8 @@ export async function POST(req: Request): Promise<Response> {
   if (!success) {
     return Response.json({ error: "user_not_found" }, { status: 404 });
   }
+
+  await recordServerAuditEvent({ email: session.email, tenantId: session.tenantId, role: session.role }, "auth.password_changed", { reason: "mandatory_rotation" });
 
   // Re-issue session cookie with mustReset: false
   const newToken = await signSession(session.email, session.role, session.tenantId, req.headers.get("user-agent") || "", false, session.mfa === true);

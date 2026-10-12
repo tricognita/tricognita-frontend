@@ -112,6 +112,7 @@ export const AUDITOR_API = [
   "/api/guard/interactions",
   "/api/guard/report",
   "/api/audit-trail",
+  "/api/audit/events",   // the organisation's own trail; the Go API scopes it to the caller's tenant
   "/api/findings",
   "/api/cloud/resources",
   "/api/compliance/score",

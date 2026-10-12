@@ -209,6 +209,20 @@ export interface Evidence {
   summary: string;
 }
 
+/** One action recorded in the organisation's tamper-evident audit trail. */
+export interface AuditEvent {
+  /** Position in the organisation's chain; strictly increasing. */
+  seq: number;
+  /** Who acted: an email address or a system actor. Shown only to roles that may view the trail. */
+  actor: string;
+  /** The recorded action key, e.g. "credential_added". */
+  action: string;
+  resource: string;
+  /** Short non-sensitive details, as returned (sensitive keys are dropped by the API). */
+  details: Record<string, string | number | boolean | null>;
+  occurredAt: Timestamp;
+}
+
 export type ExceptionState = "ACTIVE" | "EXPIRED" | "REVOKED";
 
 export interface Exception {

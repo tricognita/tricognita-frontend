@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth";
 import { revokeJti, deleteRefreshToken, recordSecurityEvent } from "@/lib/token-store";
 import { clientIpFromHeaders } from "@/lib/rate-limit";
+import { recordServerAuditEvent } from "@/lib/server-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,9 @@ export async function POST(req: Request): Promise<Response> {
   // Revoke the access token JTI immediately — stolen cookies stop working now
   if (accessToken) {
     const session = await verifySession(accessToken, "", false); // skip revocation check — we're revoking it
+    if (session) {
+      await recordServerAuditEvent({ email: session.email, tenantId: session.tenantId, role: session.role }, "auth.logout", { ip });
+    }
     if (session?.jti) {
       const remainingTtl = session.exp - Math.floor(Date.now() / 1000);
       await revokeJti(session.jti, Math.max(remainingTtl, 60)).catch(() => {});

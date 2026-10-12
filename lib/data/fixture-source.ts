@@ -63,6 +63,8 @@ export const fixtureSource: DataSource = {
   recordManualApplied: () => Promise.reject(new NotImplementedError("recording a change")),
   verifyManualRemediation: () => Promise.reject(new NotImplementedError("verifying a fix")),
   getEvidence: () => resolve(FIXTURE_EVIDENCE),
+  // Development fixtures hold no audit history: an empty trail, never invented entries.
+  getAuditEvents: () => resolve({ events: [], nextBefore: null }),
   // The record is proof. A fixture version would be a fabricated record of
   // checks that never ran, so fixtures say it is not available instead.
   getAssuranceRecord: () => Promise.reject(new NotImplementedError("assurance record")),

@@ -2,6 +2,7 @@ import type { RemediationOffer } from "@/lib/api/adapters/remediation";
 import type { RemediationRequestInput } from "@/lib/api/remediation";
 import type { VerifyNowResult } from "@/lib/api/controls";
 import type { ManualAppliedInput, ManualProposalInput, ManualVerifyResult } from "@/lib/api/manual-remediation";
+import type { AuditPage } from "@/lib/api/audit";
 import type {
   AlertRoute,
   AssuranceRecord,
@@ -71,6 +72,8 @@ export interface DataSource {
   recordManualApplied(id: string, input: ManualAppliedInput): Promise<void>;
   verifyManualRemediation(id: string): Promise<ManualVerifyResult>;
   getEvidence(): Promise<Evidence[]>;
+  /** The organisation's audit trail, newest first. `before` pages to older events. */
+  getAuditEvents(before?: number): Promise<AuditPage>;
   /** The Control Assurance Record, generated from persisted product data. */
   getAssuranceRecord(): Promise<AssuranceRecord>;
   getReports(): Promise<Report[]>;
