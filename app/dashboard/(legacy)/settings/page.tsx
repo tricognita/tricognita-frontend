@@ -124,6 +124,7 @@ export default function SettingsPage() {
     blast_radius_cap: settingsData?.blast_radius_cap ?? 10,
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsFailed, setSettingsFailed] = useState(false);
 
   useEffect(() => {
     if (settingsData) {
@@ -136,11 +137,23 @@ export default function SettingsPage() {
   }, [settingsData]);
 
   async function saveARIASettings() {
-    await fetch("/api/aria/config/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ariaSettings),
-    });
+    // "Saved" is shown only when the API confirmed the write.
+    let saved = false;
+    try {
+      const res = await fetch("/api/aria/config/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ariaSettings),
+      });
+      saved = res.ok;
+    } catch {
+      saved = false;
+    }
+    if (!saved) {
+      setSettingsFailed(true);
+      setTimeout(() => setSettingsFailed(false), 4000);
+      return;
+    }
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2500);
     void emitAuditEvent({
@@ -295,7 +308,7 @@ export default function SettingsPage() {
           </div>
 
           <Button variant="primary" size="md" onClick={saveARIASettings}>
-            {settingsSaved ? "✓ Saved" : "Save ARIA settings"}
+            {settingsSaved ? "✓ Saved" : settingsFailed ? "Not saved: settings API unavailable" : "Save ARIA settings"}
           </Button>
         </VStack>
       </Card>

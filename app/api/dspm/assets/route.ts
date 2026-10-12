@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { verifySession, sessionCookieName } from "@/lib/auth";
 import { secretOrError, GO_API } from "@/lib/jit-secret";
+import { callUpstream } from "@/lib/bff-upstream";
 import { getJitToken } from "@/lib/jit-token";
 
 export const runtime = "nodejs";
@@ -31,31 +32,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 }
 
-// POST — trigger classification for tenant
+// POST: trigger classification for the tenant. "queued" is reported only when the Go API said so.
 export async function POST(): Promise<Response> {
-  const jar = await cookies();
-  const sessionToken = jar.get(sessionCookieName())?.value;
-  const session = await verifySession(sessionToken);
-  if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
-
-  const check = secretOrError();
-  if (check instanceof Response) {
-    return Response.json({ queued: true, message: "Classification queued (simulation).", simulated: true });
-  }
-  const token = await getJitToken({ sub: session.email, tenantId: session.tenantId, role: session.role });
-
-  try {
-    const upstream = await fetch(`${GO_API}/api/dspm/assets`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Initiated-By": session.email,
-        "X-User-Role": session.role,
-      },
-      signal: AbortSignal.timeout(30000),
-    });
-    return Response.json(await upstream.json(), { status: upstream.status });
-  } catch {
-    return Response.json({ queued: true, message: "Classification queued (simulation).", simulated: true });
-  }
+  return callUpstream({ path: "/api/dspm/assets", method: "POST", timeoutMs: 30000 });
 }

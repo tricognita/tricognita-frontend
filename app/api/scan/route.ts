@@ -1,5 +1,5 @@
-import { randomBytes } from "crypto";
 import { GO_API } from "@/lib/jit-secret";
+import { backendUnreachable, interpretUpstream, validateFleetScan } from "@/lib/bff-upstream";
 import { recordEvent } from "@/lib/datasets";
 import { notifyScanComplete } from "@/lib/notify";
 import { authedRoute, logRoute } from "@/lib/bff-log";
@@ -17,12 +17,11 @@ export const maxDuration = 60;
  *   1. authedRoute verifies session + mints JIT
  *   2. acquireQuota gates per-tenant concurrency (returns 429 if exceeded)
  *   3. fetch upstream Go /api/scan with timeout + correlation id
- *   4. fall back to a synthetic "simulated" response if upstream is down
+ *   4. report success only for a 2xx upstream with a real report; otherwise an
+ *      honest 502/passthrough error with no notification, event or usage charge
  *   5. releaseQuota ALWAYS runs in finally so an orphaned slot never
  *      permanently consumes a tenant's allotment
  *
- * The dashboard's ScanState machine treats a `simulated: true` response
- * as the "partial" state (degraded but recoverable).
  */
 export const POST = authedRoute(async ({ ctx, session, token, req }) => {
   // Phase 8 — per-tenant scan concurrency guard.
@@ -115,82 +114,42 @@ async function runScan({
       tenant_id: session.tenantId,
       detail: msg,
     });
-    const simResult = {
-      scan_id: `sim-${randomBytes(4).toString("hex")}`,
-      status: "completed",
-      findings_count: 0,
-      message:
-        "Simulation: AWS Scan skipped (Backend Offline). Your environment appears compliant.",
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      simulated: true,
-    };
-    await recordEvent(
-      "scan_result",
-      { initiated_by: session.email, role: session.role, backend: "offline" },
-      simResult,
-      { source: "scan_api", user_email: session.email },
-    ).catch(() => {});
-    notifyScanComplete(session.email, 0, 0, session.tenantId).catch(() => {});
-    recordUsage({
-      tenantId: session.tenantId,
-      dimension: "scans",
-      userEmail: session.email,
-    });
-    return Response.json(simResult);
+    // No scan ran: no result, no notification, no usage charge.
+    void _writeScanStatus("failed", { progress_pct: 0 });
+    return backendUnreachable();
   }
 
-  const bodyText = await upstream.text();
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(bodyText);
-  } catch {
-    logRoute(ctx, "error", "scan.invalid_json", {
-      tenant_id: session.tenantId,
-      upstream_status: upstream.status,
-      preview: bodyText.slice(0, 200),
-    });
-    return Response.json(
-      {
-        error: "backend_error",
-        message: "Invalid response from backend.",
-        status: upstream.status,
+  const result = await interpretUpstream(
+    upstream,
+    {
+      validate: validateFleetScan,
+      onSuccess: async (_s, body) => {
+        const report = (body as { report: { findings: Array<{ severity?: string }> } }).report;
+        const findings = report.findings.length;
+        const critical = report.findings.filter((f) => f.severity === "CRITICAL").length;
+        await recordEvent(
+          "scan_result",
+          { initiated_by: session.email, role: session.role },
+          body as Record<string, unknown>,
+          { source: "scan_api", user_email: session.email },
+        ).catch(() => {});
+        notifyScanComplete(session.email, findings, critical, session.tenantId).catch(() => {});
+        void _writeScanStatus("complete", { findings_count: findings, progress_pct: 100 });
+        logRoute(ctx, "info", "scan.complete", {
+          tenant_id: session.tenantId,
+          findings,
+          critical,
+          upstream_status: upstream.status,
+        });
+        // Usage is charged only for a scan that actually returned a report.
+        recordUsage({ tenantId: session.tenantId, dimension: "scans", userEmail: session.email });
       },
-      { status: 502 },
-    );
+    },
+    session,
+  );
+  if (!result.ok) {
+    logRoute(ctx, "error", "scan.failed", { tenant_id: session.tenantId, status: result.status });
+    void _writeScanStatus("failed", { progress_pct: 0 });
   }
-
-  await recordEvent(
-    "scan_result",
-    { initiated_by: session.email, role: session.role },
-    body,
-    { source: "scan_api", user_email: session.email },
-  ).catch(() => {});
-
-  const findings = (body.findings_count as number) ?? (body.total_findings as number) ?? 0;
-  const critical = (body.critical_count as number) ?? (body.critical as number) ?? 0;
-  notifyScanComplete(
-    (body.account_id as string) || session.email,
-    findings,
-    critical,
-    session.tenantId,
-  ).catch(() => {});
-
-  void _writeScanStatus("complete", { findings_count: findings, progress_pct: 100 });
-  logRoute(ctx, "info", "scan.complete", {
-    tenant_id: session.tenantId,
-    findings,
-    critical,
-    upstream_status: upstream.status,
-  });
-
-  // Usage accounting — increment scans counter for the month.
-  // Fail-open: errors swallowed inside recordUsage.
-  recordUsage({
-    tenantId: session.tenantId,
-    dimension: "scans",
-    userEmail: session.email,
-  });
-
-  return Response.json(body, { status: upstream.status });
+  return result;
 }
