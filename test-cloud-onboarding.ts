@@ -6,17 +6,17 @@ import { callUpstream, type UpstreamDeps } from "./lib/bff-upstream";
 let failed = 0;
 const ok = (c: boolean, m: string) => { if (!c) { failed++; console.error("FAIL:", m); } else console.log("ok:  ", m); };
 
-// --- Authorization: connect/disconnect/test are ADMIN-only; reading trust details is the SECOPS tier; verify matches runVerification ---
-for (const m of ["POST", "DELETE"]) {
-  ok(JSON.stringify(apiRequiredRoles("/api/credentials", m)) === '["ADMIN"]', `${m} /api/credentials => ADMIN only`);
-  ok(JSON.stringify(apiRequiredRoles("/api/credentials/test/abc", m)) === '["ADMIN"]', `${m} /api/credentials/test/{id} => ADMIN only`);
+// --- Authorization at the edge: cloud-account routes are the SECOPS tier (the Go API enforces TierOperator and the
+// exact scope; the UI offers manage buttons to ADMIN only, rbac manageCloudAccounts). Read-only roles never reach them. ---
+for (const role of ["AUDITOR", "VIEWER", "CLIENT", "DESIGNER"]) {
+  ok(!roleMayCallApi(role, "/api/credentials", "POST"), `${role} cannot connect an account`);
+  ok(!roleMayCallApi(role, "/api/credentials", "DELETE"), `${role} cannot disconnect an account`);
+  ok(!roleMayCallApi(role, "/api/credentials/test/abc", "POST"), `${role} cannot test a connection`);
+  ok(!roleMayCallApi(role, "/api/credentials/aws/external-id", "GET"), `${role} cannot read the trust details`);
+  ok(!roleMayCallApi(role, "/api/assessments", "POST"), `${role} cannot run a verification`);
 }
-ok(!roleMayCallApi("SECOPS", "/api/credentials", "POST"), "SECOPS cannot connect an account");
-ok(!roleMayCallApi("AUDITOR", "/api/credentials/aws/external-id", "GET"), "AUDITOR cannot read the trust details");
 ok(roleMayCallApi("ADMIN", "/api/credentials/aws/external-id", "GET"), "ADMIN can read the trust details");
-ok(roleMayCallApi("SECOPS", "/api/assessments", "POST"), "SECOPS can run a verification");
-ok(!roleMayCallApi("AUDITOR", "/api/assessments", "POST"), "AUDITOR cannot run a verification");
-ok(!roleMayCallApi("DESIGNER", "/api/assessments", "POST") && !roleMayCallApi("DESIGNER", "/api/credentials", "POST"), "DESIGNER cannot connect or verify");
+ok(roleMayCallApi("ADMIN", "/api/credentials", "POST") && roleMayCallApi("ADMIN", "/api/assessments", "POST"), "ADMIN can connect and verify");
 ok(apiRequiredRoles("/api/assessments", "POST") !== "deny", "/api/assessments is classified (not fail-closed deny)");
 
 // --- Operator-only surfaces are not reachable by a customer's administrator (the edge adds the tenant check) ---
