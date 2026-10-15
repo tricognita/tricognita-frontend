@@ -143,7 +143,7 @@ export function RequestRemediationForm({
             autoComplete="off"
             spellCheck={false}
             disabled={pending}
-            placeholder="e.g. the bucket name or resource id from your cloud console"
+            placeholder="e.g. the storage account, bucket or security group name"
             className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[var(--text-sm)] text-[var(--fg)] font-mono"
             value={resourceUrn}
             onChange={(e) => setResourceUrn(e.target.value)}
@@ -152,9 +152,7 @@ export function RequestRemediationForm({
             }}
           />
           <span className="text-[10px] text-[var(--fg-subtle)]">
-            Tricognita does not show a resource&apos;s full identifier in this product — enter it as
-            it appears in your own cloud console.
-          </span>
+            Enter the resource&apos;s name as this screen or your cloud console shows it, or its full id. A name that matches more than one resource is refused.</span>
         </label>
 
         {selected?.requiredParams.map((p) => (

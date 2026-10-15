@@ -342,9 +342,11 @@ export function useManualRemediationMutations(controlId: string): ManualRemediat
   };
 }
 
-export const useAuditEvents = (): Query<import("@/lib/api/audit").AuditPage> => {
+export const useAuditEvents = (
+  filters: import("@/lib/api/audit").AuditFilters = {},
+): Query<import("@/lib/api/audit").AuditPage> => {
   const may = useMayRead("/api/audit/events");
-  return useQuery(may ? "audit-events" : null, () => dataSource.getAuditEvents(), undefined, may === false);
+  return useQuery(may ? `audit-events:${JSON.stringify(filters)}` : null, () => dataSource.getAuditEvents(filters), undefined, may === false);
 };
 
 export const useEvidence = (): Query<Evidence[]> =>

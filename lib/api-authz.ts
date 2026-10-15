@@ -117,14 +117,23 @@ export function isPlatformOnlyApi(path: string): boolean {
   return PLATFORM_ONLY_API.some((p) => path === p.replace(/\/$/, "") || path.startsWith(p));
 }
 
+// The organisation's own audit trail (who did what, with actor emails and source
+// IPs). The Go API scopes it to the caller's tenant through RLS but cannot tell a
+// viewer from an auditor (its scopes are per tier, and AUTO carries audit:read for
+// the evidence surfaces), so the role split lives here and must equal the
+// `viewAuditTrail` capability in rbac.ts / rbac-roster.ts.
+export const AUDIT_EVENTS_API = ["/api/audit/events"];
+export const AUDIT_EVENTS_ROLES: Role[] = ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"];
+
 // API paths requiring ADMIN, SECOPS, or AUDITOR (read-only compliance).
 export const AUDITOR_API = [
   "/api/guard/stats",
   "/api/guard/interactions",
   "/api/guard/report",
   "/api/audit-trail",
-  "/api/audit/events",   // the organisation's own trail; the Go API scopes it to the caller's tenant
   "/api/findings",
+  "/api/reports",        // list and download: the exportReports roster; generating is a MUTATION_POLICY entry
+  "/api/drift",          // drift read back from the retained results
   "/api/cloud/resources",
   "/api/compliance/score",
   "/api/compliance/controls",
@@ -189,6 +198,12 @@ export const AUTHENTICATED_API = [
 export const MUTATION_POLICY: Array<{ prefix: string; roles: Role[] }> = [
   { prefix: "/api/alert-routes", roles: ["ADMIN", "SECOPS"] },
   { prefix: "/api/api-keys",     roles: ["ADMIN"] },
+  // Generating a report writes a permanent record. The operator tier the Go API requires is exactly
+  // these roles (the same set that may run a verification); reading and downloading is wider (exportReports).
+  { prefix: "/api/reports",      roles: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
+  // Switching an automated fix on for the organisation is an administrator's decision (the Go API also needs MFA).
+  // Reading what is on or off is not here: it stays with the remediation read surface.
+  { prefix: "/api/remediation/actions", roles: ["ADMIN"] },
 ];
 
 const SAFE_METHODS = new Set(["GET", "HEAD"]);
@@ -245,6 +260,7 @@ export function apiRequiredRoles(path: string, method = "GET"): Role[] | "any" |
   if (ADMIN_API.some(p => path.startsWith(p)))    return ["ADMIN"];
   if (ADMIN_SECOPS_API.some(p => path.startsWith(p))) return ["ADMIN", "SECOPS"];
   if (SECOPS_API.some(p => path.startsWith(p)))   return ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "RED_TEAMER", "FINOPS_ANALYST", "CLOUD_ENGINEER"];
+  if (AUDIT_EVENTS_API.some(p => path.startsWith(p))) return AUDIT_EVENTS_ROLES;
   if (AUDITOR_API.some(p => path.startsWith(p)))  return ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "VIEWER"];
   if (AUTHENTICATED_API.some(p => path.startsWith(p))) return "any"; // authenticated, any role
   return "deny"; // Batch 2.1: fail closed — no policy matched

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   AuthorizingState,
@@ -23,7 +24,7 @@ import {
 import { canDo } from "@/lib/rbac";
 import { useSession } from "@/lib/use-session";
 import { useAuditEvents } from "@/lib/data";
-import { fetchAuditEvents } from "@/lib/api/audit";
+import { auditFilterProblem, fetchAuditEvents, type AuditFilters } from "@/lib/api/audit";
 import type { AuditEvent } from "@/lib/domain";
 import { QueryBoundary } from "../admin/QueryBoundary";
 
@@ -32,7 +33,15 @@ function detailText(e: AuditEvent): string {
   return parts.length ? parts.join(" · ") : "—";
 }
 
-function EventsTable({ first, nextBefore }: { first: AuditEvent[]; nextBefore: number | null }) {
+function EventsTable({
+  first,
+  nextBefore,
+  filters,
+}: {
+  first: AuditEvent[];
+  nextBefore: number | null;
+  filters: AuditFilters;
+}) {
   const [older, setOlder] = useState<AuditEvent[]>([]);
   const [cursor, setCursor] = useState<number | null>(nextBefore);
   const [busy, setBusy] = useState(false);
@@ -44,7 +53,7 @@ function EventsTable({ first, nextBefore }: { first: AuditEvent[]; nextBefore: n
     setBusy(true);
     setError(null);
     try {
-      const page = await fetchAuditEvents(cursor);
+      const page = await fetchAuditEvents(filters, cursor);
       setOlder((o) => [...o, ...page.events]);
       setCursor(page.nextBefore);
     } catch (e) {
@@ -54,6 +63,15 @@ function EventsTable({ first, nextBefore }: { first: AuditEvent[]; nextBefore: n
     }
   }
 
+  if (events.length === 0 && Object.values(filters).some(Boolean)) {
+    return (
+      <EmptyState
+        variant="bordered"
+        title="No recorded actions match these filters"
+        description="Nothing for your organisation matches. Widen the dates or clear a filter."
+      />
+    );
+  }
   if (events.length === 0) {
     return (
       <EmptyState
@@ -107,6 +125,74 @@ function EventsTable({ first, nextBefore }: { first: AuditEvent[]; nextBefore: n
   );
 }
 
+const INPUT =
+  "rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[var(--text-sm)] text-[var(--fg)] w-full";
+const LABEL = "text-[10px] uppercase tracking-wide text-[var(--fg-subtle)]";
+const KEYS = ["actor", "action", "from", "to"] as const;
+
+/**
+ * Filters live in the address (?actor=&action=&from=&to=) so a reload or a shared link shows the same
+ * view. Input that cannot be valid is explained here and never sent; the API checks it again.
+ */
+function FilterForm({ applied }: { applied: AuditFilters }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [draft, setDraft] = useState<AuditFilters>(applied);
+  const [problem, setProblem] = useState<string | null>(null);
+  const set = (k: (typeof KEYS)[number]) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDraft((d) => ({ ...d, [k]: e.target.value }));
+
+  function go(f: AuditFilters) {
+    const p = new URLSearchParams();
+    for (const k of KEYS) if (f[k]?.trim()) p.set(k, f[k]!.trim());
+    router.replace(p.size ? `${pathname}?${p.toString()}` : pathname);
+  }
+  function apply(e: React.FormEvent) {
+    e.preventDefault();
+    const why = auditFilterProblem(draft);
+    setProblem(why);
+    if (!why) go(draft);
+  }
+  function clear() {
+    setDraft({});
+    setProblem(null);
+    go({});
+  }
+  return (
+    <form onSubmit={apply} aria-label="Filter recorded actions" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <label className="block">
+        <span className={LABEL}>Who (email contains)</span>
+        <input name="actor" className={INPUT} value={draft.actor ?? ""} onChange={set("actor")} autoComplete="off" />
+      </label>
+      <label className="block">
+        <span className={LABEL}>Action (contains)</span>
+        <input name="action" className={INPUT} value={draft.action ?? ""} onChange={set("action")} autoComplete="off" placeholder="e.g. auth." />
+      </label>
+      <label className="block">
+        <span className={LABEL}>From (YYYY-MM-DD)</span>
+        <input name="from" type="date" className={INPUT} value={draft.from ?? ""} onChange={set("from")} />
+      </label>
+      <label className="block">
+        <span className={LABEL}>To (YYYY-MM-DD)</span>
+        <input name="to" type="date" className={INPUT} value={draft.to ?? ""} onChange={set("to")} />
+      </label>
+      <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
+        <Button type="submit" variant="secondary" size="sm">
+          Apply filters
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={clear}>
+          Clear
+        </Button>
+      </div>
+      {problem && (
+        <p role="alert" className="text-[var(--text-xs)] text-[var(--fg)] sm:col-span-2 lg:col-span-4">
+          {problem}
+        </p>
+      )}
+    </form>
+  );
+}
+
 /**
  * Audit trail — who did what, when.
  *
@@ -122,7 +208,13 @@ function EventsTable({ first, nextBefore }: { first: AuditEvent[]; nextBefore: n
  */
 export function AuditTrailScreen() {
   const { role, isLoading: sessionLoading } = useSession();
-  const audit = useAuditEvents();
+  const search = useSearchParams();
+  // Hand-edited addresses are not trusted: anything that fails the same rules as the form is ignored.
+  const fromUrl: AuditFilters = {};
+  for (const k of KEYS) fromUrl[k] = search.get(k) ?? "";
+  const applied = auditFilterProblem(fromUrl) ? {} : fromUrl;
+  const urlProblem = auditFilterProblem(fromUrl);
+  const audit = useAuditEvents(applied);
 
   // The capability cannot be evaluated until the role is known, and the
   // protected surface must not render while the answer is outstanding.
@@ -149,11 +241,17 @@ export function AuditTrailScreen() {
         description="Sign-ins, approvals, exceptions, configuration changes and exports."
         spacing="sm"
       >
+        <FilterForm key={JSON.stringify(applied)} applied={applied} />
+        {urlProblem && (
+          <p role="alert" className="text-[var(--text-xs)] text-[var(--fg)]">
+            The filters in the address were not valid ({urlProblem}) so they were ignored.
+          </p>
+        )}
         <QueryBoundary
           query={audit}
           unavailableMessage="Each action taken in your account: who took it, when, the object it affected and its outcome."
         >
-          {(data) => <EventsTable first={data.events} nextBefore={data.nextBefore} />}
+          {(data) => <EventsTable key={JSON.stringify(applied)} first={data.events} nextBefore={data.nextBefore} filters={applied} />}
         </QueryBoundary>
       </Section>
 

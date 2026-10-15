@@ -73,7 +73,7 @@ export interface DataSource {
   verifyManualRemediation(id: string): Promise<ManualVerifyResult>;
   getEvidence(): Promise<Evidence[]>;
   /** The organisation's audit trail, newest first. `before` pages to older events. */
-  getAuditEvents(before?: number): Promise<AuditPage>;
+  getAuditEvents(filters?: import("@/lib/api/audit").AuditFilters, before?: number): Promise<AuditPage>;
   /** The Control Assurance Record, generated from persisted product data. */
   getAssuranceRecord(): Promise<AssuranceRecord>;
   getReports(): Promise<Report[]>;

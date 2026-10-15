@@ -10,6 +10,7 @@
  * The policy modules are dependency-free, so these run under node --test.
  * middleware.ts enforces both, and the Go API decides independently.
  */
+import { canDo } from "./rbac";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -62,7 +63,6 @@ const PROTECTED_PAGES = [
 
 const DENIED_ACTIONS: [string, string][] = [
   ["POST", "/api/remediation"],
-  ["POST", "/api/remediation/actions"],
   ["POST", "/api/remediation/rem-1/execute"],
   ["POST", "/api/remediate"],
   ["POST", "/api/approvals"],
@@ -112,7 +112,37 @@ test("only ADMIN may create or delete API keys", () => {
       assert.equal(roleMayCallApi("ADMIN", path, m), true);
     }
   }
-  assert.deepEqual(MUTATION_POLICY.map((p) => p.prefix).sort(), ["/api/alert-routes", "/api/api-keys"]);
+  // The reviewed set of mutating route families. Adding one is a decision, so it fails here until it is made on purpose.
+  assert.deepEqual(MUTATION_POLICY.map((p) => p.prefix).sort(), ["/api/alert-routes", "/api/api-keys", "/api/remediation/actions", "/api/reports"]);
+});
+
+// ── 2a. Switching an automated fix on or off for the organisation ──────────
+
+test("only ADMIN may switch an automated fix on or off; reading what is on stays with the remediation read surface", () => {
+  for (const m of ["PUT", "DELETE"]) {
+    assert.deepEqual(apiRequiredRoles("/api/remediation/actions/azure.storage.require_https", m), ["ADMIN"], m);
+    for (const role of ["SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "AUDITOR", "VIEWER", "CLIENT", "DESIGNER"] as Role[]) {
+      assert.equal(roleMayCallApi(role, "/api/remediation/actions/azure.storage.require_https", m), false, `${role} ${m}`);
+    }
+    assert.equal(roleMayCallApi("ADMIN", "/api/remediation/actions/azure.storage.require_https", m), true);
+  }
+  // asking for a fix (POST /api/remediation) is not widened by this entry
+  assert.notDeepEqual(apiRequiredRoles("/api/remediation", "POST"), ["ADMIN"]);
+});
+
+// ── 2b. Reports: read widely, generate narrowly ────────────────────────────
+
+test("any exportReports role may list and download a report; only the operator roles may generate one", () => {
+  const OPERATORS: Role[] = ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"];
+  for (const role of ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"] as Role[]) {
+    assert.equal(roleMayCallApi(role, "/api/reports", "GET"), true, `${role} list`);
+    assert.equal(roleMayCallApi(role, "/api/reports/x/download", "GET"), true, `${role} download`);
+    assert.equal(roleMayCallApi(role, "/api/reports", "POST"), OPERATORS.includes(role), `${role} generate`);
+  }
+  assert.deepEqual(apiRequiredRoles("/api/reports", "POST"), OPERATORS);
+  // the operator set is exactly the roles that may run a verification: one population, not two
+  for (const role of OPERATORS) assert.equal(canDo(role, "runVerification"), true, role);
+  assert.equal(roleMayCallApi("DESIGNER", "/api/reports", "GET"), false, "DESIGNER has no report access");
 });
 
 // ── 3. E2 / ARIA internal routes ───────────────────────────────────────────

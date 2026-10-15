@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { AUTH_INPUT, AUTH_INPUT_CENTER, AUTH_SUBMIT } from "@/app/components/ui/authStyles";
+import { loginErrorMessage } from "@/lib/login-messages";
 
 // Allow only same-origin absolute paths. Blocks "//evil.com", "/\evil.com",
 // "http://…", and any other attempt to break out of the app origin.
@@ -46,7 +47,7 @@ function LoginForm() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(body?.error || "Invalid credentials");
+        setError(loginErrorMessage(body?.error, res.headers.get("Retry-After")));
         setLoading(false);
         return;
       }

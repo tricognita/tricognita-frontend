@@ -13,6 +13,7 @@ import { canDo } from "@/lib/rbac";
 import { useSession } from "@/lib/use-session";
 import { QueryBoundary } from "../QueryBoundary";
 import { ExportAction } from "../ExportAction";
+import { GenerateReport } from "../GenerateReport";
 import { PeriodFacts } from "../PeriodFacts";
 
 /**
@@ -47,11 +48,14 @@ export function MonthlyScreen() {
         const report = latestReportOfKind(data, "MONTHLY_ASSURANCE");
         if (!report) {
           return (
-            <EmptyState
-              variant="bordered"
-              title="No monthly report yet"
-              description="The first monthly report is produced after a full calendar month of verification."
-            />
+            <VStack gap="lg">
+              <EmptyState
+                variant="bordered"
+                title="No monthly report yet"
+                description="A monthly report covers one finished calendar month in which verification ran. Generate the first one below."
+              />
+              <GenerateReport kind="MONTHLY_ASSURANCE" existing={data} onGenerated={reports.refresh} />
+            </VStack>
           );
         }
 
@@ -79,6 +83,15 @@ export function MonthlyScreen() {
               spacing="sm"
             >
               <ReportCard report={report} action={<ExportAction report={report} />} />
+            </Section>
+
+            <Section
+              eyebrow="Another month"
+              title="Generate a report for a different month"
+              description="A month is generated once; the first one stays the record."
+              spacing="sm"
+            >
+              <GenerateReport kind="MONTHLY_ASSURANCE" existing={data} onGenerated={reports.refresh} />
             </Section>
 
             <Section

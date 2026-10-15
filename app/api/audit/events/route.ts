@@ -9,7 +9,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof
 export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const qs = new URLSearchParams();
-  for (const k of ["limit", "before"]) {
+  for (const k of ["limit", "before", "actor", "action", "from", "to"]) {
     const v = url.searchParams.get(k);
     if (v !== null) qs.set(k, v);
   }

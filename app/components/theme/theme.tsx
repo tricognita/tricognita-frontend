@@ -105,6 +105,8 @@ export function ThemeScript() {
   const js =
     "(function(){try{var t=localStorage.getItem('theme');" +
     "if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}" +
+    // The product (/dashboard) is dark-only: its screens use the dark palette directly. Never stored.
+    "if(location.pathname.indexOf('/dashboard')===0){t='dark';}" +
     "var e=document.documentElement;e.dataset.theme=t;e.style.colorScheme=t;}" +
     "catch(_){document.documentElement.dataset.theme='dark';}})();";
   return <script dangerouslySetInnerHTML={{ __html: js }} />;

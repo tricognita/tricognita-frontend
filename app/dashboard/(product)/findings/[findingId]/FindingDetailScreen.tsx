@@ -126,14 +126,13 @@ export function FindingDetailScreen({ findingId }: { findingId: string }) {
         }
         actions={
           canDo(role, "requestRemediation") && isOpen && automatedFixAvailable ? (
-            <Button
-              variant="primary"
-              size="sm"
-              disabled
-              title="Requesting a fix arrives with the remediation API. Until then, follow the steps below or ask your Tricognita engineer."
+            <Link
+              href={`/dashboard/controls/${encodeURIComponent(f.controlId)}`}
+              className="inline-flex items-center rounded-[var(--radius-tight)] bg-[var(--brand-primary)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--on-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+              title="Requests are made on the control: you name the resource and pick one of its allow-listed fixes."
             >
               Request a fix
-            </Button>
+            </Link>
           ) : null
         }
       />
@@ -249,8 +248,9 @@ export function FindingDetailScreen({ findingId }: { findingId: string }) {
           <RemediationSteps steps={f.remediationSteps} />
           {automatedFixAvailable && (
             <p className="text-[var(--text-xs)] text-[var(--fg-subtle)]">
-              An automated fix exists for this control. Requesting one from here arrives with the
-              remediation API.
+              An automated fix exists for this control. It is requested on the control&rsquo;s page, needs a
+              second person&rsquo;s approval, and only works if an administrator has switched that fix on
+              under Remediation.
             </p>
           )}
         </VStack>

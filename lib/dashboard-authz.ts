@@ -95,6 +95,28 @@ export const DESIGNER_ROUTES: Array<{ path: string; exact?: boolean }> = [
 
 const under = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(prefix + "/");
 
+/**
+ * Operator consoles. Each is a page of the platform operator's own tooling whose data comes from
+ * /api/admin/*, which middleware already refuses to any tenant but the platform's. The role map
+ * above only says "ADMIN", which every customer's administrator holds, so without this a customer
+ * admin could open the shell of a console that can show them nothing. The customer-facing admin
+ * pages (users, alert-routes, api-keys, settings) are deliberately NOT in this list.
+ */
+export const PLATFORM_ONLY_PAGES = [
+  "/dashboard/admin/commercial",
+  "/dashboard/admin/feedback",
+  "/dashboard/admin/insights",
+  "/dashboard/admin/leads",
+  "/dashboard/admin/operations",
+  "/dashboard/admin/pilot-health",
+  "/dashboard/admin/platform",
+  "/dashboard/admin/trace",
+];
+
+export function isPlatformOnlyPage(pathname: string): boolean {
+  return PLATFORM_ONLY_PAGES.some((p) => under(pathname, p));
+}
+
 export function isRoleAllowed(pathname: string, role: Role): boolean {
   if (role === "DESIGNER") {
     return DESIGNER_ROUTES.some((r) => (r.exact ? pathname === r.path : under(pathname, r.path)));

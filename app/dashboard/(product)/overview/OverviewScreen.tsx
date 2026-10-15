@@ -102,7 +102,10 @@ export function OverviewScreen() {
 
   const lastRun = runs.data ? lastCompletedRun(runs.data) : undefined;
   const nextAt = controls.data ? nextVerificationAt(controls.data) : undefined;
-  const connectedAccounts = accounts.data?.filter((a) => a.connection === "CONNECTED").length ?? 0;
+  // An account that is readable but cannot answer some controls (PERMISSION_FAILURE) is still
+  // connected; Operations and its own card say what it cannot check.
+  const connectedAccounts =
+    accounts.data?.filter((a) => a.connection === "CONNECTED" || a.connection === "PERMISSION_FAILURE").length ?? 0;
 
   // Drift and exceptions are not served by the backend yet (they report "unavailable"),
   // and that must not hide the failing controls: with them missing, the list is built from
@@ -128,11 +131,17 @@ export function OverviewScreen() {
         meta={
           <>
             <span>
-              {connectedAccounts} cloud account{connectedAccounts === 1 ? "" : "s"} connected
+              {/* Never "0 connected" for a list that could not be read: that is a fact this page does not have. */}
+              {accounts.data
+                ? `${connectedAccounts} cloud account${connectedAccounts === 1 ? "" : "s"} connected`
+                : accounts.isLoading
+                  ? "Checking cloud accounts…"
+                  : "Cloud accounts could not be loaded"}
             </span>
             {lastRun && (
               <span>
-                Last verified{" "}
+                {/* A run that could not read the account is not a verification. */}
+                {lastRun.state === "VERIFIED" ? "Last verified" : "Last verification did not complete"}{" "}
                 <DateTime value={lastRun.finishedAt ?? lastRun.startedAt} variant="relative" />
               </span>
             )}

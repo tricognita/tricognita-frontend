@@ -66,6 +66,8 @@ export interface RemediationOffer {
   summary: string;
   rollback: string;
   requiredParams: string[];
+  /** Validated by the platform, so an administrator may switch it on or off for the organisation. */
+  available: boolean;
   enabled: boolean;
   /** Why it is unavailable. Present exactly when enabled is false. */
   reason?: string;
@@ -78,6 +80,7 @@ export function toRemediationOffer(dto: RemediationActionDTO): RemediationOffer 
     summary: dto.summary ?? "",
     rollback: dto.rollback ?? "",
     requiredParams: dto.requiredParams ?? [],
+    available: Boolean(dto.available) || Boolean(dto.enabled),
     enabled: Boolean(dto.enabled),
     reason: dto.reason || undefined,
   };

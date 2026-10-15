@@ -33,6 +33,48 @@ export const setAlertRouteEnabled = (id: string, enabled: boolean) =>
 export const deleteAlertRoute = (id: string) =>
   apiSend<{ status: string }>("DELETE", `/api/alert-routes/${encodeURIComponent(id)}`, "delete this alert route");
 
+/** API keys. Metadata only: the secret exists in exactly one response, the one that creates the key. */
+export type ApiKeyScope = "scan:read" | "audit:read";
+
+export interface ApiKeyRow {
+  id: string;
+  name: string;
+  /** First characters of the key, enough to recognise it. Not the secret. */
+  prefix: string;
+  scopes: string[];
+  createdBy: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+}
+
+export async function fetchApiKeys(): Promise<ApiKeyRow[]> {
+  const b = await apiGet<{ keys: Array<Record<string, unknown>> }>("/api/api-keys", "API keys");
+  return (b.keys ?? []).map((k) => ({
+    id: String(k.id),
+    name: String(k.name ?? ""),
+    prefix: String(k.key_prefix ?? ""),
+    scopes: Array.isArray(k.scopes) ? k.scopes.map(String) : [],
+    createdBy: typeof k.created_by === "string" ? k.created_by : "",
+    createdAt: String(k.created_at ?? ""),
+    lastUsedAt: typeof k.last_used_at === "string" ? k.last_used_at : null,
+    expiresAt: typeof k.expires_at === "string" ? k.expires_at : null,
+  }));
+}
+
+export const createApiKey = (input: { name: string; scopes: ApiKeyScope[]; expiry_days: number }) =>
+  apiSend<{ id: string; key: string }>("POST", "/api/api-keys", "create this API key", input);
+export const revokeApiKey = (id: string) =>
+  apiSend<{ status: string }>("DELETE", `/api/api-keys/${encodeURIComponent(id)}`, "revoke this API key");
+
+/** Where a key stands today, from its dates alone. Revoked keys are not listed: they stop working at once. */
+export function apiKeyStatus(k: Pick<ApiKeyRow, "expiresAt">, now: number = Date.now()): "active" | "expiring" | "expired" {
+  if (!k.expiresAt) return "active";
+  const left = Date.parse(k.expiresAt) - now;
+  if (left <= 0) return "expired";
+  return left < 7 * 24 * 3600 * 1000 ? "expiring" : "active";
+}
+
 export interface UserRow {
   id: string;
   email: string;

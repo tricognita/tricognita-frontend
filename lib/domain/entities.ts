@@ -247,7 +247,11 @@ export interface Report {
   state: ReportState;
   generatedAt?: Timestamp;
   downloadUrl?: string;
-  formats: ("PDF" | "CSV")[];
+  formats: ("PDF" | "CSV" | "JSON")[];
+  /** Who generated it. Absent on a customer-facing summary that names no one. */
+  generatedBy?: string;
+  /** Whether the document carries a signature. Only ever true when the API said so. */
+  signed?: boolean;
   summary?: {
     controlsVerified: number;
     controlsFailing: number;
