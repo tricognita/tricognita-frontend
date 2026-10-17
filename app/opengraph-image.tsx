@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { SITE_METHOD, SITE_TAGLINE, SITE_TITLE } from "@/lib/marketing/site";
 
 // Canonical octopus-in-triangle mark, embedded as a data URI so Satori can render it.
 const MARK_SRC = `data:image/png;base64,${readFileSync(
@@ -9,8 +10,9 @@ const MARK_SRC = `data:image/png;base64,${readFileSync(
 
 // Site-wide Open Graph / Twitter card. Fixes the previously-empty
 // `summary_large_image` card (which rendered blank on X/LinkedIn/Slack).
+// Wording comes from lib/marketing/site.ts (approved copy only).
 // Rendered from the real brand tokens in app/globals.css.
-export const alt = "Tricognita — Autonomous Cloud Resilience";
+export const alt = SITE_TITLE;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -64,10 +66,10 @@ export default function OpengraphImage() {
               letterSpacing: -1,
             }}
           >
-            Autonomous Cloud Resilience
+            {SITE_TAGLINE}
           </div>
           <div style={{ fontSize: 30, color: LAVENDER, marginTop: 28 }}>
-            Predictive risk · Self-healing remediation · Zero-trust enforcement
+            {SITE_METHOD}
           </div>
         </div>
 

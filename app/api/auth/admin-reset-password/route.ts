@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { verifySession, sessionCookieName } from "@/lib/auth";
 import { findById, adminResetPassword, sanitize } from "@/lib/users";
+import { recordServerAuditEvent } from "@/lib/server-audit";
+import { canSeeTenant } from "@/lib/tenant-assign";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,11 +37,16 @@ export async function POST(req: Request): Promise<Response> {
   // Prevent admin from resetting their own password via this endpoint
   // (they should use the change-password flow instead)
   const target = await findById(userId);
-  if (!target) return Response.json({ error: "not_found" }, { status: 404 });
+  // Tenant boundary: an admin can only reset passwords of users in their own tenant
+  // (platform admins: all). Other tenants' users are reported as not_found.
+  if (!target || !canSeeTenant(session.tenantId, target.tenantId)) {
+    return Response.json({ error: "not_found" }, { status: 404 });
+  }
 
   const updated = await adminResetPassword(userId, tempPassword);
   if (!updated) return Response.json({ error: "not_found" }, { status: 404 });
 
+  await recordServerAuditEvent({ email: session.email, tenantId: session.tenantId, role: session.role }, "user.password_reset", { target: updated.email });
   return Response.json({
     user: sanitize(updated),
     mustReset: true,

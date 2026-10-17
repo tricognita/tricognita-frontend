@@ -51,4 +51,17 @@ export const ROLES_BY_CAPABILITY: Record<Capability, Role[]> = {
   viewNotifications:  ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
   viewAttackGraph:    ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
   viewThreatIntel:    ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+
+  // ── Managed Cloud Control Assurance (mirrors lib/rbac.ts) ────────────────
+  viewControls:        ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+  viewEvidence:        ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+  exportReports:       ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+  runVerification:     ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"],
+  requestRemediation:  ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"],
+  approveRemediation:  ["ADMIN", "SECOPS", "SOC_LEAD"],
+  manageExceptions:    ["ADMIN", "SECOPS", "SOC_LEAD"],
+  viewOperations:      ["ADMIN", "SECOPS", "SOC_LEAD"],
+  manageCloudAccounts: ["ADMIN"],
+  manageAlertRoutes:   ["ADMIN"],
+  manageApiKeys:       ["ADMIN"],
 };

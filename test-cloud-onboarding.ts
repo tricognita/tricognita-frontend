@@ -1,0 +1,121 @@
+// Cloud-account onboarding: authorization policy, honest findings derivation, and no fabricated deletion/creation.
+// Run: node --import tsx test-cloud-onboarding.ts   (env as for test-no-fabricated-success.ts)
+import { apiRequiredRoles, roleMayCallApi, isPlatformOnlyApi } from "./lib/api-authz";
+import { callUpstream, type UpstreamDeps } from "./lib/bff-upstream";
+
+let failed = 0;
+const ok = (c: boolean, m: string) => { if (!c) { failed++; console.error("FAIL:", m); } else console.log("ok:  ", m); };
+
+// --- Authorization at the edge: cloud-account routes are the SECOPS tier (the Go API enforces TierOperator and the
+// exact scope; the UI offers manage buttons to ADMIN only, rbac manageCloudAccounts). Read-only roles never reach them. ---
+for (const role of ["AUDITOR", "VIEWER", "CLIENT", "DESIGNER"]) {
+  ok(!roleMayCallApi(role, "/api/credentials", "POST"), `${role} cannot connect an account`);
+  ok(!roleMayCallApi(role, "/api/credentials", "DELETE"), `${role} cannot disconnect an account`);
+  ok(!roleMayCallApi(role, "/api/credentials/test/abc", "POST"), `${role} cannot test a connection`);
+  ok(!roleMayCallApi(role, "/api/credentials/aws/external-id", "GET"), `${role} cannot read the trust details`);
+  ok(!roleMayCallApi(role, "/api/assessments", "POST"), `${role} cannot run a verification`);
+}
+ok(roleMayCallApi("ADMIN", "/api/credentials/aws/external-id", "GET"), "ADMIN can read the trust details");
+ok(roleMayCallApi("ADMIN", "/api/credentials", "POST") && roleMayCallApi("ADMIN", "/api/assessments", "POST"), "ADMIN can connect and verify");
+ok(apiRequiredRoles("/api/assessments", "POST") !== "deny", "/api/assessments is classified (not fail-closed deny)");
+
+// --- The audit trail is for the roles that hold viewAuditTrail; a viewer or client user must not read it by API ---
+for (const role of ["VIEWER", "CLIENT", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST"]) {
+  ok(!roleMayCallApi(role, "/api/audit/events", "GET"), `${role} cannot read the audit trail API`);
+}
+for (const role of ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"]) {
+  ok(roleMayCallApi(role, "/api/audit/events", "GET"), `${role} can read the audit trail API`);
+}
+
+// --- Reports: everyone who may export can read and download; only the operator roles can generate ---
+for (const role of ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "VIEWER"]) {
+  ok(roleMayCallApi(role, "/api/reports", "GET") && roleMayCallApi(role, "/api/reports/x/download", "GET"), `${role} can list and download reports`);
+  ok(roleMayCallApi(role, "/api/drift", "GET"), `${role} can read drift`);
+}
+for (const role of ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"]) ok(roleMayCallApi(role, "/api/reports", "POST"), `${role} can generate a report`);
+for (const role of ["AUDITOR", "VIEWER", "CLIENT", "RED_TEAMER", "FINOPS_ANALYST"]) ok(!roleMayCallApi(role, "/api/reports", "POST"), `${role} cannot generate a report`);
+
+// --- Operator-only surfaces are not reachable by a customer's administrator (the edge adds the tenant check) ---
+for (const p of ["/api/admin/commercial", "/api/admin/pilot-health", "/api/admin/leads", "/api/admin/platform/tenants", "/api/organizations", "/api/datasets/export"]) {
+  ok(isPlatformOnlyApi(p), `${p} is platform-only`);
+}
+for (const p of ["/api/credentials", "/api/auth/users", "/api/audit/events", "/api/cloud-accounts", "/api/administrators"]) {
+  ok(!isPlatformOnlyApi(p), `${p} stays tenant-level`);
+}
+
+// --- A deletion or creation is reported only when the backend confirmed it ---
+const SESSION = { email: "a@x.com", tenantId: "t1", role: "ADMIN" };
+function deps(upstream: () => Promise<Response>): UpstreamDeps {
+  return {
+    getSession: async () => SESSION,
+    secret: () => ({ secret: "s".repeat(40) }),
+    mintToken: async () => "tok",
+    fetch: (async () => upstream()) as typeof fetch,
+    goApi: "http://go.test",
+  };
+}
+const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
+const delValidate = (b: unknown) => (isObj(b) && b.status === "deleted" ? null : "deletion not confirmed");
+const createValidate = (b: unknown) => (isObj(b) && typeof b.id === "string" && b.id !== "" ? null : "missing credential id");
+
+(async () => {
+  let r = await callUpstream({ path: "/api/credentials/x", method: "DELETE", validate: delValidate }, deps(async () => { throw new Error("down"); }));
+  ok(r.status === 502 && (await r.json()).error === "backend_unreachable", "DELETE with the API down => 502, not 'deleted'");
+  r = await callUpstream({ path: "/api/credentials/x", method: "DELETE", validate: delValidate }, deps(async () => Response.json({ status: "deleted" })));
+  ok(r.status === 200 && (await r.json()).status === "deleted", "DELETE confirmed by the API => relayed");
+  r = await callUpstream({ path: "/api/credentials/x", method: "DELETE", validate: delValidate }, deps(async () => Response.json({ error: "credential not found" }, { status: 404 })));
+  ok(r.status === 404, "DELETE of an unknown credential => 404 relayed");
+  r = await callUpstream({ path: "/api/credentials", method: "POST", body: "{}", validate: createValidate }, deps(async () => Response.json({ status: "created" })));
+  ok(r.status === 502, "POST answering 200 without an id => 502, not 'created'");
+  r = await callUpstream({ path: "/api/credentials", method: "POST", body: "{}", validate: createValidate }, deps(async () => Response.json({ id: "i-1", status: "created" })));
+  ok(r.status === 200 && (await r.json()).id === "i-1", "POST confirmed with an id => relayed");
+
+  // --- A file download is relayed only when it is a real file of the expected type; refusals keep their meaning ---
+  const RAW = { contentTypes: ["text/csv", "application/json"], passHeaders: ["content-disposition", "x-report-sha256"] };
+  const file = (body: string, type: string, extra: Record<string, string> = {}) => async () => new Response(body, { status: 200, headers: { "Content-Type": type, ...extra } });
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(file("a,b\n1,2\n", "text/csv; charset=utf-8", { "Content-Disposition": 'attachment; filename="r.csv"', "X-Report-Sha256": "abc", "Set-Cookie": "evil=1", "X-Internal": "secret" })));
+  ok(r.status === 200 && (await r.text()) === "a,b\n1,2\n", "a CSV is relayed untouched");
+  ok(r.headers.get("content-disposition") === 'attachment; filename="r.csv"' && r.headers.get("x-report-sha256") === "abc", "the named headers are passed on");
+  ok(r.headers.get("set-cookie") === null && r.headers.get("x-internal") === null && r.headers.get("cache-control") === "private, no-store" && r.headers.get("x-content-type-options") === "nosniff", "no other upstream header leaks; the file is never cached");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(file("<html>login</html>", "text/html")));
+  ok(r.status === 502 && (await r.json()).error === "backend_incomplete", "a 200 that is not the expected file type is not a download");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(file("", "text/csv")));
+  ok(r.status === 502, "an empty file is not a download");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(async () => Response.json({ error: "report not found" }, { status: 404 })));
+  ok(r.status === 404 && (await r.json()).error === "report not found", "a refusal keeps its status and words");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(async () => new Response("goroutine 1 [running]: secret internals", { status: 500 })));
+  const leaked = await r.text();
+  ok(r.status === 500 && !leaked.includes("goroutine"), "an upstream 500 body is never relayed");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(async () => { throw new Error("down"); }));
+  ok(r.status === 502 && (await r.json()).error === "backend_unreachable", "an unreachable API is an outage, not an empty file");
+
+  // --- Findings are derived from persisted control results, never invented ---
+  const calls: string[] = [];
+  const realFetch = globalThis.fetch;
+  const res = (b: unknown, s = 200) => Response.json(b, { status: s });
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const u = String(input); calls.push(u);
+    if (u === "/api/controls") return res({ controls: [
+      { id: "C-FAIL", name: "Failing one", description: "", whyItMatters: "", domain: "IDENTITY", expectedState: "", severity: "HIGH", provider: "AWS", frameworkRefs: [], status: "FAIL", resourcesInScope: 2, resourcesFailing: 1, verification: "VERIFIED", remediationAvailable: false, evidenceRefs: [] },
+      { id: "C-PASS", name: "Passing one", description: "", whyItMatters: "", domain: "IDENTITY", expectedState: "", severity: "LOW", provider: "AWS", frameworkRefs: [], status: "PASS", resourcesInScope: 1, resourcesFailing: 0, verification: "VERIFIED", remediationAvailable: false, evidenceRefs: [] },
+    ] });
+    if (u.endsWith("/results")) return res({ results: [{ id: "r1", controlId: "C-FAIL", resourceId: "res-1", runId: "run-1", status: "FAIL", checkedAt: "2026-10-12T10:00:00Z" }, { id: "r2", controlId: "C-FAIL", resourceId: "res-2", runId: "run-1", status: "PASS", checkedAt: "2026-10-12T10:00:00Z" }], resources: [{ id: "res-1", label: "bucket-a", type: "s3", service: "s3", provider: "AWS", accountId: "acct", regionLabel: "r", identifierMasked: "••" }] });
+    if (u.endsWith("/history")) return res({ results: [
+      { id: "r1", controlId: "C-FAIL", resourceId: "res-1", runId: "run-1", status: "FAIL", checkedAt: "2026-10-12T10:00:00Z" },
+      { id: "h0", controlId: "C-FAIL", resourceId: "res-1", runId: "run-0", status: "FAIL", checkedAt: "2026-10-10T10:00:00Z" },
+      { id: "h-1", controlId: "C-FAIL", resourceId: "res-1", runId: "run--1", status: "PASS", checkedAt: "2026-10-01T10:00:00Z" },
+    ], resources: [] });
+    return res({}, 404);
+  }) as typeof fetch;
+  try {
+    const { fetchFindings } = await import("./lib/api/findings");
+    const f = await fetchFindings();
+    ok(f.length === 1 && f[0].resourceId === "res-1" && f[0].status === "OPEN", "only the FAIL result becomes a finding (PASS resource and PASS control excluded)");
+    ok(f[0].firstSeenAt === "2026-10-10T10:00:00Z", "firstSeenAt is the start of the unbroken FAIL run, not earlier than observed");
+    ok(f[0].lastSeenAt === "2026-10-12T10:00:00Z" && f[0].remediationSteps.length === 0, "lastSeenAt from the latest result; no invented remediation steps");
+    ok(calls.filter((c) => c.endsWith("/results")).length === 1 && !calls.some((c) => c.includes("C-PASS")), "only failing controls are fetched (bounded fan-out)");
+  } finally { globalThis.fetch = realFetch; }
+
+  if (failed) { console.error(`\n${failed} FAILED`); process.exit(1); }
+  console.log("\nall passed");
+})();

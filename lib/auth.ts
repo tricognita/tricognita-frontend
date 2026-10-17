@@ -16,12 +16,15 @@ export type Role =
   | "CLOUD_ENGINEER"
   | "RED_TEAMER"
   | "FINOPS_ANALYST"
-  | "CLIENT";
+  | "CLIENT"
+  // Design-review account: read-only product surfaces, deny-by-default
+  // (lib/dashboard-authz.ts DESIGNER_ROUTES, lib/api-authz.ts DESIGNER_API).
+  | "DESIGNER";
 
 export const ROLES: Role[] = [
   "ADMIN", "SECOPS", "AUDITOR", "VIEWER",
   "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER",
-  "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"
+  "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "DESIGNER"
 ];
 
 const COOKIE_NAME    = "trico_session";
@@ -88,6 +91,8 @@ export interface Session {
   jti: string;   // unique token ID for replay prevention
   uat: string;   // first 16 hex chars of SHA-256(userAgent) — client binding
   mustReset?: boolean;
+  /** true only when a second factor was verified at login; copied into the signed JIT `mfa` claim. */
+  mfa?: boolean;
 }
 
 // Generate a 128-bit random token ID (jti)
@@ -108,7 +113,7 @@ async function uaFingerprint(userAgent: string): Promise<string> {
 }
 
 // signSession: email + role + tenantId + UA fingerprint → signed token
-export async function signSession(email: string, role: Role, tenantId: string, userAgent = "", mustReset = false): Promise<string> {
+export async function signSession(email: string, role: Role, tenantId: string, userAgent = "", mustReset = false, mfa = false): Promise<string> {
   const secret = getSecret();
   const now = Math.floor(Date.now() / 1000);
   const payload: Session = {
@@ -120,6 +125,7 @@ export async function signSession(email: string, role: Role, tenantId: string, u
     jti: randomJti(),
     uat: await uaFingerprint(userAgent),
     mustReset,
+    ...(mfa ? { mfa: true } : {}),
   };
   const payloadB64 = base64url(enc(JSON.stringify(payload)));
   const sig = await hmac(secret, payloadB64);
@@ -204,9 +210,10 @@ export interface RefreshPayload {
   jti:   string; // refresh token's own jti
   iat:   number;
   exp:   number;
+  mfa?:  boolean; // second factor verified at login; survives refresh
 }
 
-export async function signRefreshToken(email: string, role: Role, tenantId: string): Promise<string> {
+export async function signRefreshToken(email: string, role: Role, tenantId: string, mfa = false): Promise<string> {
   const secret = getSecret();
   const now = Math.floor(Date.now() / 1000);
   const payload: RefreshPayload = {
@@ -214,6 +221,7 @@ export async function signRefreshToken(email: string, role: Role, tenantId: stri
     jti: randomJti(),
     iat: now,
     exp: now + REFRESH_TTL_SECONDS,
+    ...(mfa ? { mfa: true } : {}),
   };
   const payloadB64 = base64url(enc(JSON.stringify(payload)));
   const sig = await hmac(secret + ":refresh", payloadB64); // different key domain from access tokens
@@ -243,54 +251,6 @@ export async function verifyRefreshToken(token: string | undefined): Promise<Ref
 }
 
 // ── Zero-Trust Route → Role Map ─────────────────────────────────────────────
-// DENY BY DEFAULT: any route listed here requires the listed roles.
-// Routes NOT listed = any authenticated user may access.
-// Principle: least privilege. Clients get read-only views; admins get full power.
-const ALL_ROLES: Role[] = ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "SOC_LEAD", "DEVSECOPS", "RED_TEAMER", "FINOPS_ANALYST", "CLOUD_ENGINEER", "CLIENT"];
-
-const ROLE_ROUTES: Array<{ prefix: string; allow: Role[] }> = [
-  // ── Admin-only ────────────────────────────────────────────────────────────
-  { prefix: "/dashboard/users",                  allow: ["ADMIN"] },
-  { prefix: "/dashboard/admin",                  allow: ["ADMIN"] },
-  { prefix: "/dashboard/settings",               allow: ["ADMIN", "SECOPS"] },
-
-  // ── Admin + SecOps write operations ──────────────────────────────────────
-  { prefix: "/dashboard/guard/policies",         allow: ["ADMIN", "SECOPS", "SOC_LEAD"] },
-  { prefix: "/dashboard/zero-trust",             allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
-
-  // ── Broad access: all internal roles + clients get read-only view ─────────
-  { prefix: "/dashboard/executive",              allow: ALL_ROLES },
-  { prefix: "/dashboard/plan",                   allow: ALL_ROLES },
-  { prefix: "/dashboard/exports",                allow: ALL_ROLES },
-  { prefix: "/dashboard/queue",                  allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "AUDITOR"] },
-  { prefix: "/dashboard/soc",                    allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "AUDITOR"] },
-  { prefix: "/dashboard/attack-graph",           allow: ALL_ROLES },
-  { prefix: "/dashboard/ai-security",            allow: ALL_ROLES },
-  { prefix: "/dashboard/threat-intel",           allow: ALL_ROLES },
-  { prefix: "/dashboard/incidents",              allow: ALL_ROLES },
-  { prefix: "/dashboard/finops-security",        allow: ALL_ROLES },
-  { prefix: "/dashboard/services",               allow: ALL_ROLES },
-  { prefix: "/dashboard/audit-trail",            allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/compliance",             allow: ALL_ROLES },
-  { prefix: "/dashboard/findings",              allow: ALL_ROLES },
-  { prefix: "/dashboard/dspm",                  allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
-  { prefix: "/dashboard/iac",                   allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/k8s",                  allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/credentials",          allow: ["ADMIN", "SECOPS", "CLOUD_ENGINEER", "DEVSECOPS"] },
-  { prefix: "/onboarding",                     allow: ALL_ROLES },
-  { prefix: "/dashboard/guard/reports",          allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD"] },
-  { prefix: "/dashboard/guard",                  allow: ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/aria",                   allow: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS"] },
-  { prefix: "/dashboard/alert-routes",           allow: ["ADMIN", "SECOPS"] },
-  { prefix: "/dashboard/api-keys",               allow: ["ADMIN"] },
-];
-
-export function isRoleAllowed(pathname: string, role: Role): boolean {
-  for (const rule of ROLE_ROUTES) {
-    if (pathname === rule.prefix || pathname.startsWith(rule.prefix + "/")) {
-      return rule.allow.includes(role);
-    }
-  }
-  // Default: allow any authenticated user
-  return true;
-}
+// Lives in lib/dashboard-authz.ts (dependency-free, so it is unit-testable);
+// re-exported here so middleware.ts keeps one import.
+export { isRoleAllowed } from "./dashboard-authz";

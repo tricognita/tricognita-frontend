@@ -74,7 +74,20 @@ export type Capability =
   | "viewAttackGraph"      // /api/aria/graph (any authenticated)
   | "viewThreatIntel"      // /api/threatintel (any authenticated)
   | "viewIncidents"        // /api/aria/actions (read-only incident list — SECOPS tier)
-  | "viewAiSecurity";      // /api/aria/... ai-security endpoints (SECOPS tier)
+  | "viewAiSecurity"       // /api/aria/... ai-security endpoints (SECOPS tier)
+  // ── Managed Cloud Control Assurance (Phase 1 product) ───────────────────
+  // Additive only. No existing capability's role list is changed.
+  | "viewControls"         // GET /api/controls, /api/assurance/reports/*
+  | "runVerification"      // POST /api/controls/:id/verify
+  | "requestRemediation"   // POST /api/remediation
+  | "approveRemediation"   // POST /api/remediation/:id/approve|reject
+  | "manageExceptions"     // POST/DELETE /api/exceptions
+  | "viewEvidence"         // GET /api/assurance/evidence/:id, /verify/:id
+  | "exportReports"        // GET /api/reports, /api/reports/:id
+  | "viewOperations"       // GET /api/operations (verification failures, account health)
+  | "manageCloudAccounts"  // POST/DELETE /api/cloud/accounts
+  | "manageAlertRoutes"    // POST/PATCH/DELETE /api/alert-routes
+  | "manageApiKeys";       // POST/DELETE /api/api-keys
 
 // ─── Permission Matrix ─────────────────────────────────────────────────────
 
@@ -118,6 +131,28 @@ const CAPABILITIES: Record<Capability, Role[]> = {
   viewNotifications:  ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
   viewAttackGraph:    ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
   viewThreatIntel:    ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+
+  // ── Managed Cloud Control Assurance ─────────────────────────────────────
+  // Read is broad; every mutation is restricted. RED_TEAMER, FINOPS_ANALYST,
+  // CLIENT, AUDITOR and VIEWER map to the VIEWER product role and appear ONLY
+  // in read capabilities below — never in run/request/approve/manage.
+  viewControls:        ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+  viewEvidence:        ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+  exportReports:       ["ADMIN", "SECOPS", "AUDITOR", "VIEWER", "DEVSECOPS", "SOC_LEAD", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT"],
+
+  // Security Operations + Engineering may act on their own cloud.
+  runVerification:     ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"],
+  requestRemediation:  ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"],
+
+  // Approval and risk acceptance stay with Security Operations and Admin.
+  approveRemediation:  ["ADMIN", "SECOPS", "SOC_LEAD"],
+  manageExceptions:    ["ADMIN", "SECOPS", "SOC_LEAD"],
+  viewOperations:      ["ADMIN", "SECOPS", "SOC_LEAD"],
+
+  // Administration.
+  manageCloudAccounts: ["ADMIN"],
+  manageAlertRoutes:   ["ADMIN"],
+  manageApiKeys:       ["ADMIN"],
 };
 
 // ─── Public API ────────────────────────────────────────────────────────────

@@ -3,49 +3,27 @@ import { cookies } from "next/headers";
 import { verifySession, sessionCookieName } from "@/lib/auth";
 import { secretOrError, GO_API } from "@/lib/jit-secret";
 import { getJitToken } from "@/lib/jit-token";
+import { relayAriaStream } from "@/lib/aria-stream";
 
-export async function GET(req: Request): Promise<Response> {
+export async function GET(): Promise<Response> {
   const jar = await cookies();
   const sessionToken = jar.get(sessionCookieName())?.value;
   const session = await verifySession(sessionToken);
+  if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
   const check = secretOrError();
   if (check instanceof Response) return check;
-  if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
   const token = await getJitToken({ sub: session.email, tenantId: session.tenantId, role: session.role });
   try {
     const res = await fetch(`${GO_API}/api/aria/stream`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
       cache: "no-store",
     });
-    return new Response(res.body, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
+    return relayAriaStream(res);
   } catch {
-    console.warn(`[stream] Go API unreachable. Serving empty simulated stream.`);
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode("event: ping\ndata: {}\n\n"));
-        const iv = setInterval(() => {
-          controller.enqueue(new TextEncoder().encode("event: ping\ndata: {}\n\n"));
-        }, 15000);
-        req.signal.addEventListener("abort", () => {
-          clearInterval(iv);
-          controller.close();
-        });
-      }
-    });
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
+    // No fake "connected" stream: the client must see that the feed is down and reconnect.
+    return Response.json(
+      { error: "backend_unreachable", message: "The live ARIA feed is unavailable." },
+      { status: 502 },
+    );
   }
 }

@@ -1,35 +1,18 @@
-import { cookies } from "next/headers";
-import { verifySession, sessionCookieName } from "@/lib/auth";
-import { secretOrError, GO_API } from "@/lib/jit-secret";
-import { getJitToken } from "@/lib/jit-token";
+import { callUpstream } from "@/lib/bff-upstream";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 15;
 
-async function getSession() {
-  const jar = await cookies();
-  return verifySession(jar.get(sessionCookieName())?.value);
-}
+const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
 
-export async function DELETE(
-  
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<Response> {
-  const session = await getSession();
-  if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
-
-  const { id } = await params;
-  const check = secretOrError();
-  if (check instanceof Response) return check;
-  const token = await getJitToken({ sub: session.email, tenantId: session.tenantId, role: session.role });
-
-  const upstream = await fetch(`${GO_API}/api/api-keys/${id}`, {
+/** Revoking a key on record is real and stays available. */
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
+  const { id } = await ctx.params;
+  return callUpstream({
+    path: `/api/api-keys/${encodeURIComponent(id)}`,
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}`, "X-Initiated-By": session.email },
-    signal: AbortSignal.timeout(10_000),
+    precheck: () => (/^[0-9a-fA-F-]{16,64}$/.test(id) ? null : Response.json({ error: "invalid_id" }, { status: 400 })),
+    validate: (b) => (isObj(b) && typeof b.status === "string" ? null : "revocation not confirmed"),
   });
-  const j = await upstream.json().catch(() => ({}));
-  return Response.json(j, { status: upstream.status });
 }

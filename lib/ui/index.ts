@@ -71,3 +71,28 @@ export { ConfirmDangerous } from "./ConfirmDangerous";
 
 // Platform-posture banner (degraded / outage)
 export { DegradedBanner } from "./DegradedBanner";
+
+// ─── Product shell (Phase 1) ────────────────────────────────────────────────
+export { AppShell } from "./AppShell";
+export { Sidebar } from "./Sidebar";
+export { PageHeader } from "./PageHeader";
+export { Breadcrumbs } from "./Breadcrumbs";
+export type { Crumb } from "./Breadcrumbs";
+
+// ─── Overlays ───────────────────────────────────────────────────────────────
+export { Drawer } from "./Drawer";
+export { Modal } from "./Modal";
+
+// ─── Navigation within a page ───────────────────────────────────────────────
+export { Tabs } from "./Tabs";
+export type { TabItem } from "./Tabs";
+export { Pagination } from "./Pagination";
+
+// ─── Data display ───────────────────────────────────────────────────────────
+export { DataTable } from "./DataTable";
+export type { Column } from "./DataTable";
+export { DateTime, formatAbsolute, formatRelative } from "./DateTime";
+export { CopyableId } from "./CopyableId";
+
+// ─── Access / availability states ───────────────────────────────────────────
+export { NotAuthorizedState, UnavailableState, AuthorizingState } from "./AccessStates";
