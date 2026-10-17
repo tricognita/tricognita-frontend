@@ -89,7 +89,9 @@ export function ConnectAccountPanel({ onChanged, onClose }: { onChanged: () => v
     GUID.test(clientId.trim()) &&
     GUID.test(subscriptionId.trim()) &&
     clientSecret !== "";
-  const canSubmit = !busy && (provider === "aws" ? awsValid && !!trust : azureValid);
+  // An AWS role can only be assumed if Tricognita knows which identity the role must trust;
+  // the notice above says connecting is disabled without it, so it must actually be.
+  const canSubmit = !busy && (provider === "aws" ? awsValid && !!trust?.platformPrincipalArn : azureValid);
 
   const trustPolicy = trust
     ? JSON.stringify(
@@ -240,6 +242,12 @@ export function ConnectAccountPanel({ onChanged, onClose }: { onChanged: () => v
             <p className="text-[var(--text-xs)] text-[var(--fg-muted)]">
               Create a service principal with the built-in <code>Reader</code> role on the subscription and enter
               its details. The secret is encrypted when stored and is never shown again.
+            </p>
+            <p className="text-[var(--text-xs)] text-[var(--fg-muted)]">
+              Reader is enough to check how your resources are configured. Two kinds of control need more, and show as
+              Not assessed (never Passing) until it is granted: Key Vault key checks need a list-keys access policy on
+              the vault (or Key Vault Reader on a vault that uses Azure RBAC), and the Microsoft Entra identity checks
+              need Microsoft Graph read permissions with administrator consent.
             </p>
             <Field label="Directory (tenant) ID">
               <input className={INPUT} value={tenantId} onChange={(e) => setTenantId(e.target.value)} autoComplete="off" spellCheck={false} />

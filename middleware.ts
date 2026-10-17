@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySession, isRoleAllowed, sessionCookieName } from "@/lib/auth";
 import { apiRequiredRoles, roleMayCallApi, isPlatformOnlyApi } from "@/lib/api-authz";
 import { PLATFORM_TENANT } from "@/lib/tenant-assign";
+import { isPlatformOnlyPage } from "@/lib/dashboard-authz";
 import { buildAllowedOrigins, isOriginAllowed } from "@/lib/csrf-origins";
 
 // ── Security headers added to every response ─────────────────────────────────
@@ -166,6 +167,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     }
 
     if (!isRoleAllowed(pathname, session.role)) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      url.searchParams.set("denied", pathname);
+      return NextResponse.redirect(url);
+    }
+
+    // Operator consoles are the platform tenant's alone, whatever the role.
+    if (isPlatformOnlyPage(pathname) && session.tenantId !== PLATFORM_TENANT) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       url.searchParams.set("denied", pathname);

@@ -19,7 +19,8 @@ export type NotAssessedReason =
   | "NEVER_RUN"
   | "NO_PERMISSION"
   | "PROVIDER_ERROR"
-  | "NOT_APPLICABLE";
+  | "NOT_APPLICABLE"
+  | "NO_RESOURCES";
 
 export type VerificationState = "PENDING" | "VERIFYING" | "VERIFIED" | "FAILED";
 
@@ -155,10 +156,11 @@ export const CONTROL_STATUS: Record<ControlStatus, StatusPresentation> = {
 };
 
 export const NOT_ASSESSED_REASON: Record<NotAssessedReason, string> = {
-  NEVER_RUN: "No verification has run yet",
+  NEVER_RUN: "No result has been recorded for this control yet",
   NO_PERMISSION: "The connected role is missing a permission",
   PROVIDER_ERROR: "The cloud provider returned an error",
-  NOT_APPLICABLE: "No resources of this type in scope",
+  NOT_APPLICABLE: "Not applicable to your connected cloud",
+  NO_RESOURCES: "Checked: your connected account has no resources of this type, so there is nothing to assess",
 };
 
 export const VERIFICATION_STATE: Record<VerificationState, StatusPresentation> = {

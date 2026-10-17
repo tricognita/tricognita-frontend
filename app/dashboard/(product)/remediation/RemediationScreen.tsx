@@ -24,6 +24,7 @@ import { canDo } from "@/lib/rbac";
 import { useSession } from "@/lib/use-session";
 import { QueryBoundary, SkeletonRows } from "./QueryBoundary";
 import { RemediationActions } from "./RemediationActions";
+import { AutomatedFixSettings } from "./AutomatedFixSettings";
 
 /**
  * Remediation — the controlled change, from request to confirmation.
@@ -96,6 +97,8 @@ export function RemediationScreen() {
           </VStack>
         )}
       </QueryBoundary>
+
+      <AutomatedFixSettings />
 
       <ManualList manual={manual} />
 

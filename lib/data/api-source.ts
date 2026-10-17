@@ -1,3 +1,4 @@
+import { fetchDriftEvents, fetchReports } from "@/lib/api/reports";
 import {
   fetchRemediations,
   fetchRemediationOffers,
@@ -59,10 +60,9 @@ import {
  *                 that mapping either — a control verdict names the resources
  *                 behind it by digest, not the findings. Connecting Findings
  *                 would mean inventing the join, so it stays unavailable.
- *   drift         no detection exists. The store can record DRIFTED when a PASS
- *                 becomes a FAIL, but nothing yet reads that back as an event.
+ *   drift         WIRED: read back from the retained control results (GET /api/drift).
  *   exceptions    no table, no endpoint.
- *   reports       no table, no endpoint.
+ *   reports       WIRED: stored, hashed period snapshots (GET/POST /api/reports, migration 037).
  *   alert routes  endpoint exists, not yet adapted.
  *   users         endpoint exists, not yet adapted.
  *   organisation  no endpoint.
@@ -91,7 +91,7 @@ export const apiSource: DataSource = {
   getResources: fetchResources,
 
   getVerificationRuns: fetchVerificationRuns,
-  getDriftEvents: () => pending("drift detection"),
+  getDriftEvents: fetchDriftEvents,
   getExceptions: () => pending("exceptions"),
   // WIRED — bounded remediation. The executor is the narrow one; a request
   // names a control, a resource and an allow-listed action, and the backend
@@ -116,7 +116,7 @@ export const apiSource: DataSource = {
   approveManualRemediation,
   recordManualApplied,
   verifyManualRemediation,
-  getReports: () => pending("reports"),
+  getReports: fetchReports,
 
   getCloudAccounts: fetchCloudAccounts,
   getAlertRoutes: () => pending("alert routes"),

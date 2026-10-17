@@ -23,9 +23,27 @@ import { productRoleOf, PRODUCT_ROLE_LABEL } from "@/lib/domain";
  */
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isLoading } = useSession();
+  const { role, email, isLoading } = useSession();
   const pathname = usePathname() ?? "";
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [signOutState, setSignOutState] = React.useState<"idle" | "working" | "failed">("idle");
+
+  // Ends the session on the server (the token is revoked, not just forgotten), then leaves.
+  // If the server cannot be reached the user is told so and stays signed in: pretending to
+  // have signed out while the session is still valid would be the unsafe answer.
+  async function signOut() {
+    setSignOutState("working");
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+      if (!res.ok) throw new Error(String(res.status));
+      // A full navigation, not router.push: it discards every cached response (SWR) that
+      // belonged to the user who just signed out.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/login");
+    } catch {
+      setSignOutState("failed");
+    }
+  }
 
   // Close the mobile drawer on navigation.
   React.useEffect(() => {
@@ -85,7 +103,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Tricognita
             </span>
             <div className="ml-auto flex items-center gap-3 text-[11px] text-[var(--fg-subtle)]">
+              {signOutState === "failed" && (
+                <span role="alert" className="text-[var(--fg)]">
+                  Could not sign you out. You are still signed in; try again.
+                </span>
+              )}
+              {!isLoading && email && (
+                <span className="hidden sm:inline max-w-[22ch] truncate" title={email}>
+                  {email}
+                </span>
+              )}
               {!isLoading && productRole && <span>{PRODUCT_ROLE_LABEL[productRole]}</span>}
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                disabled={signOutState === "working"}
+                className="rounded-[var(--radius-tight)] border border-[var(--border-default)] px-2.5 py-1.5 text-[var(--text-xs)] text-[var(--fg-muted)] hover:text-[var(--fg)] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+              >
+                {signOutState === "working" ? "Signing out…" : "Sign out"}
+              </button>
             </div>
           </header>
 

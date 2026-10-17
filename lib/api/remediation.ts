@@ -57,3 +57,39 @@ export async function executeRemediation(id: string): Promise<Remediation> {
   );
   return toRemediation(dto);
 }
+
+/** What a refusal to switch a fix on or off means, in the words the administrator needs. */
+export function fixSwitchProblem(status: number, error: string | undefined): string {
+  if (status === 403 && error === "mfa_required") {
+    return "Switching a fix on or off needs a sign-in that used your authenticator code. Sign out, sign in again with the code, and retry.";
+  }
+  if (status === 403) return "Only an administrator of your organisation can switch a fix on or off.";
+  if (status === 409) return "This fix has not been validated for use yet, so it cannot be switched on.";
+  if (status === 404) return "That fix does not exist.";
+  return `The change was not made (${error ?? status}). Nothing was switched.`;
+}
+
+/** Switch one automated fix on or off for the signed-in administrator's organisation. Throws with a plain reason. */
+export async function setFixEnabled(action: string, enabled: boolean): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/remediation/actions/${encodeURIComponent(action)}`, {
+      method: enabled ? "PUT" : "DELETE",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    throw new Error("The request could not be sent, so nothing was switched.");
+  }
+  if (!res.ok) {
+    let error: string | undefined;
+    try {
+      error = ((await res.json()) as { error?: string }).error;
+    } catch {
+      // a non-JSON refusal is still a refusal
+    }
+    throw new Error(fixSwitchProblem(res.status, error));
+  }
+  const b = (await res.json().catch(() => null)) as { enabled?: boolean } | null;
+  if (b?.enabled !== enabled) throw new Error("The change was not confirmed, so the current state is unknown. Reload to see it.");
+}

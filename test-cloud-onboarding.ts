@@ -19,6 +19,22 @@ ok(roleMayCallApi("ADMIN", "/api/credentials/aws/external-id", "GET"), "ADMIN ca
 ok(roleMayCallApi("ADMIN", "/api/credentials", "POST") && roleMayCallApi("ADMIN", "/api/assessments", "POST"), "ADMIN can connect and verify");
 ok(apiRequiredRoles("/api/assessments", "POST") !== "deny", "/api/assessments is classified (not fail-closed deny)");
 
+// --- The audit trail is for the roles that hold viewAuditTrail; a viewer or client user must not read it by API ---
+for (const role of ["VIEWER", "CLIENT", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST"]) {
+  ok(!roleMayCallApi(role, "/api/audit/events", "GET"), `${role} cannot read the audit trail API`);
+}
+for (const role of ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"]) {
+  ok(roleMayCallApi(role, "/api/audit/events", "GET"), `${role} can read the audit trail API`);
+}
+
+// --- Reports: everyone who may export can read and download; only the operator roles can generate ---
+for (const role of ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "VIEWER"]) {
+  ok(roleMayCallApi(role, "/api/reports", "GET") && roleMayCallApi(role, "/api/reports/x/download", "GET"), `${role} can list and download reports`);
+  ok(roleMayCallApi(role, "/api/drift", "GET"), `${role} can read drift`);
+}
+for (const role of ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"]) ok(roleMayCallApi(role, "/api/reports", "POST"), `${role} can generate a report`);
+for (const role of ["AUDITOR", "VIEWER", "CLIENT", "RED_TEAMER", "FINOPS_ANALYST"]) ok(!roleMayCallApi(role, "/api/reports", "POST"), `${role} cannot generate a report`);
+
 // --- Operator-only surfaces are not reachable by a customer's administrator (the edge adds the tenant check) ---
 for (const p of ["/api/admin/commercial", "/api/admin/pilot-health", "/api/admin/leads", "/api/admin/platform/tenants", "/api/organizations", "/api/datasets/export"]) {
   ok(isPlatformOnlyApi(p), `${p} is platform-only`);
@@ -53,6 +69,25 @@ const createValidate = (b: unknown) => (isObj(b) && typeof b.id === "string" && 
   ok(r.status === 502, "POST answering 200 without an id => 502, not 'created'");
   r = await callUpstream({ path: "/api/credentials", method: "POST", body: "{}", validate: createValidate }, deps(async () => Response.json({ id: "i-1", status: "created" })));
   ok(r.status === 200 && (await r.json()).id === "i-1", "POST confirmed with an id => relayed");
+
+  // --- A file download is relayed only when it is a real file of the expected type; refusals keep their meaning ---
+  const RAW = { contentTypes: ["text/csv", "application/json"], passHeaders: ["content-disposition", "x-report-sha256"] };
+  const file = (body: string, type: string, extra: Record<string, string> = {}) => async () => new Response(body, { status: 200, headers: { "Content-Type": type, ...extra } });
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(file("a,b\n1,2\n", "text/csv; charset=utf-8", { "Content-Disposition": 'attachment; filename="r.csv"', "X-Report-Sha256": "abc", "Set-Cookie": "evil=1", "X-Internal": "secret" })));
+  ok(r.status === 200 && (await r.text()) === "a,b\n1,2\n", "a CSV is relayed untouched");
+  ok(r.headers.get("content-disposition") === 'attachment; filename="r.csv"' && r.headers.get("x-report-sha256") === "abc", "the named headers are passed on");
+  ok(r.headers.get("set-cookie") === null && r.headers.get("x-internal") === null && r.headers.get("cache-control") === "private, no-store" && r.headers.get("x-content-type-options") === "nosniff", "no other upstream header leaks; the file is never cached");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(file("<html>login</html>", "text/html")));
+  ok(r.status === 502 && (await r.json()).error === "backend_incomplete", "a 200 that is not the expected file type is not a download");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(file("", "text/csv")));
+  ok(r.status === 502, "an empty file is not a download");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(async () => Response.json({ error: "report not found" }, { status: 404 })));
+  ok(r.status === 404 && (await r.json()).error === "report not found", "a refusal keeps its status and words");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(async () => new Response("goroutine 1 [running]: secret internals", { status: 500 })));
+  const leaked = await r.text();
+  ok(r.status === 500 && !leaked.includes("goroutine"), "an upstream 500 body is never relayed");
+  r = await callUpstream({ path: "/api/reports/x/download", raw: RAW }, deps(async () => { throw new Error("down"); }));
+  ok(r.status === 502 && (await r.json()).error === "backend_unreachable", "an unreachable API is an outage, not an empty file");
 
   // --- Findings are derived from persisted control results, never invented ---
   const calls: string[] = [];

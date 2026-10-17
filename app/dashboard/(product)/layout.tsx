@@ -1,5 +1,6 @@
 import { AppShell } from "@/lib/ui";
 import { FixtureBanner } from "@/lib/product/FixtureBanner";
+import { ForceDarkTheme } from "@/lib/ui/ForceDarkTheme";
 
 /**
  * Managed Cloud Control Assurance shell.
@@ -10,6 +11,7 @@ import { FixtureBanner } from "@/lib/product/FixtureBanner";
 export default function ProductLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppShell>
+      <ForceDarkTheme />
       <FixtureBanner />
       {children}
     </AppShell>

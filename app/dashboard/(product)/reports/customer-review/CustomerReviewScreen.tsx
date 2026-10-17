@@ -34,6 +34,7 @@ import { canDo } from "@/lib/rbac";
 import { useSession } from "@/lib/use-session";
 import { QueryBoundary } from "../QueryBoundary";
 import { ExportAction } from "../ExportAction";
+import { GenerateReport } from "../GenerateReport";
 import { PeriodFacts } from "../PeriodFacts";
 
 /**
@@ -93,11 +94,14 @@ export function CustomerReviewScreen() {
         const report = latestReportOfKind(data, "CUSTOMER_REVIEW");
         if (!report) {
           return (
-            <EmptyState
-              variant="bordered"
-              title="No customer review summary yet"
-              description="A summary is drawn from the record whenever a customer asks about your cloud controls."
-            />
+            <VStack gap="lg">
+              <EmptyState
+                variant="bordered"
+                title="No customer review summary yet"
+                description="A summary is drawn from the record whenever a customer asks about your cloud controls. Generate one for a recent period below."
+              />
+              <GenerateReport kind="CUSTOMER_REVIEW" existing={data} onGenerated={reports.refresh} />
+            </VStack>
           );
         }
 
@@ -123,6 +127,15 @@ export function CustomerReviewScreen() {
               spacing="sm"
             >
               <ReportCard report={report} action={<ExportAction report={report} />} />
+            </Section>
+
+            <Section
+              eyebrow="Another period"
+              title="Generate a summary for a different period"
+              description="Each summary is a stored snapshot of the period it covers."
+              spacing="sm"
+            >
+              <GenerateReport kind="CUSTOMER_REVIEW" existing={data} onGenerated={reports.refresh} />
             </Section>
 
             <Section

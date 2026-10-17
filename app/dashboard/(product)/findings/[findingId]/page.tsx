@@ -12,5 +12,13 @@ export default async function FindingDetailPage({
   params: Promise<{ findingId: string }>;
 }) {
   const { findingId } = await params;
-  return <FindingDetailScreen findingId={findingId} />;
+  // A finding id is "<control>::<resource>"; the colons reach the route percent-encoded
+  // and would never equal the id the list holds, so every finding opened as "not found".
+  let id = findingId;
+  try {
+    id = decodeURIComponent(findingId);
+  } catch {
+    // a malformed escape stays as given and resolves to "not found"
+  }
+  return <FindingDetailScreen findingId={id} />;
 }

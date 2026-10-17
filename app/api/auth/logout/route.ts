@@ -18,6 +18,9 @@ export async function POST(req: Request): Promise<Response> {
   const refreshToken = jar.get(refreshCookieName())?.value;
   const ip = clientIpFromHeaders(req);
   const ua = req.headers.get("user-agent") ?? "";
+  // False when the shared revocation store could not be written: the cookie is still cleared
+  // and the token is revoked on this instance, but another instance may accept it until it expires.
+  let revokedEverywhere = true;
 
   // Revoke the access token JTI immediately — stolen cookies stop working now
   if (accessToken) {
@@ -27,7 +30,10 @@ export async function POST(req: Request): Promise<Response> {
     }
     if (session?.jti) {
       const remainingTtl = session.exp - Math.floor(Date.now() / 1000);
-      await revokeJti(session.jti, Math.max(remainingTtl, 60)).catch(() => {});
+      // The token is already on this instance's revocation list; this is the shared store.
+      await revokeJti(session.jti, Math.max(remainingTtl, 60)).catch(() => {
+        revokedEverywhere = false;
+      });
       recordSecurityEvent({
         type: "token_revoked",
         email: session.email,
@@ -56,12 +62,10 @@ export async function POST(req: Request): Promise<Response> {
   const clearAccess  = `${sessionCookieName()}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0; Secure`;
   const clearRefresh = `${refreshCookieName()}=; HttpOnly; Path=/api/auth/refresh; SameSite=Strict; Max-Age=0; Secure`;
 
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      // Clear both cookies
-      "Set-Cookie": [clearAccess, clearRefresh].join(", "),
-    },
-  });
+  // One Set-Cookie header per cookie: a comma-joined value is parsed as a single cookie, so the
+  // second (the refresh cookie) was never cleared.
+  const headers = new Headers({ "Content-Type": "application/json" });
+  headers.append("Set-Cookie", clearAccess);
+  headers.append("Set-Cookie", clearRefresh);
+  return new Response(JSON.stringify({ ok: true, revoked: revokedEverywhere }), { status: 200, headers });
 }

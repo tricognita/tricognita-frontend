@@ -40,10 +40,52 @@ const JTI_PREFIX = "jti:rev:";
  * Blacklist a JTI. Call on logout, forced session termination, or compromise detection.
  * TTL is set to the remaining life of the access token so the key self-cleans.
  */
+// In-process revocation list. Redis is the shared source of truth across instances; this
+// map makes revocation work at all when Redis is not configured (local development, a
+// single instance) and makes it immediate on the instance that handled the logout even if
+// Redis is slow or briefly down. It only ever ADDS revocations, so it cannot weaken the
+// Redis check. Bounded: expired entries are dropped, and the oldest go first when full.
+const MAX_LOCAL_REVOKED = 10_000;
+const localRevoked = new Map<string, number>(); // jti -> expiry (ms since epoch)
+
+function rememberLocally(jti: string, ttlSeconds: number, now = Date.now()): void {
+  if (localRevoked.size >= MAX_LOCAL_REVOKED) {
+    for (const [k, exp] of localRevoked) if (exp <= now) localRevoked.delete(k);
+    while (localRevoked.size >= MAX_LOCAL_REVOKED) {
+      const oldest = localRevoked.keys().next().value;
+      if (oldest === undefined) break;
+      localRevoked.delete(oldest);
+    }
+  }
+  localRevoked.set(jti, now + ttlSeconds * 1000);
+}
+
+function revokedLocally(jti: string, now = Date.now()): boolean {
+  const exp = localRevoked.get(jti);
+  if (exp === undefined) return false;
+  if (exp <= now) {
+    localRevoked.delete(jti);
+    return false;
+  }
+  return true;
+}
+
+/** Test seam: forget every locally remembered revocation. */
+export function _resetLocalRevocations(): void {
+  localRevoked.clear();
+}
+
+/**
+ * Resolves true when the revocation reached the shared store (or no shared store is
+ * configured, so the in-process list is the only one there is); rejects when Redis is
+ * configured but could not be written, so the caller can say so. The local list is
+ * written first in every case.
+ */
 export async function revokeJti(jti: string, remainingTtlSeconds: number): Promise<void> {
-  const r = getRedis();
   const ttl = Math.max(remainingTtlSeconds, 1);
-  await r.set(`${JTI_PREFIX}${jti}`, "1", { ex: ttl });
+  rememberLocally(jti, ttl);
+  if (!redisUrl || !redisToken) return; // no shared store configured: the local list is it
+  await getRedis().set(`${JTI_PREFIX}${jti}`, "1", { ex: ttl });
 }
 
 /**
@@ -67,6 +109,10 @@ function revocationFailClosed(): boolean {
  *     revoked and rejected). Prefers security over availability.
  */
 export async function isJtiRevoked(jti: string): Promise<boolean> {
+  if (revokedLocally(jti)) return true;
+  // No shared store to ask: governed by the same switch as a Redis outage (default fail open, bounded by the
+  // access-token lifetime; REVOCATION_FAIL_CLOSED=true rejects what cannot be checked).
+  if (!redisUrl || !redisToken) return revocationFailClosed();
   try {
     const r = getRedis();
     const v = await r.get(`${JTI_PREFIX}${jti}`);

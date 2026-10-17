@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AuditTrailScreen } from "./AuditTrailScreen";
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function AuditTrailPage() {
-  return <AuditTrailScreen />;
+  return (
+    <Suspense fallback={null}>
+      <AuditTrailScreen />
+    </Suspense>
+  );
 }

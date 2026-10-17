@@ -109,7 +109,7 @@ function SidebarLink({
           "group flex items-center gap-2 rounded-[var(--radius-tight)] px-3 py-2 text-[var(--text-sm)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
           active
-            ? "bg-[var(--brand-subtle)] text-[var(--fg)]"
+            ? "bg-[var(--brand-900)] text-[var(--fg)]"
             : "text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-overlay)]",
           collapsed && "justify-center px-2",
         )}

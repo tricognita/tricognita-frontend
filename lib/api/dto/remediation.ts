@@ -12,6 +12,8 @@ export interface RemediationActionDTO {
   summary: string;
   rollback: string;
   requiredParams?: string[];
+  /** The platform has validated the action. Present on the wire; false means nobody can switch it on yet. */
+  available?: boolean;
   enabled: boolean;
   reason?: string;
 }

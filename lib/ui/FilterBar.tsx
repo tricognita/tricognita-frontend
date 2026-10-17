@@ -53,7 +53,7 @@ export function FilterBar({
       <div className="flex items-center gap-1.5 flex-wrap">{children}</div>
       <div className="flex items-center gap-3 ml-auto">
         {label && (
-          <span className="text-[10px] font-mono text-[var(--stone-600)] uppercase tracking-widest">
+          <span className="text-[10px] font-mono text-[var(--stone-400)] uppercase tracking-widest">
             {label}
           </span>
         )}
@@ -119,7 +119,7 @@ export function FilterChip({
         <span
           className={cn(
             "tabular-nums",
-            active ? "opacity-80" : "text-[var(--stone-600)]",
+            active ? "opacity-80" : "text-[var(--stone-400)]",
           )}
         >
           {count}

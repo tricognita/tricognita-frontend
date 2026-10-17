@@ -52,7 +52,7 @@ export const defaultUpstreamDeps: UpstreamDeps = {
 
 export interface UpstreamCall {
   path: string;
-  method?: "GET" | "POST" | "DELETE" | "PATCH";
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   timeoutMs?: number;
   body?: string;
   contentType?: string;
@@ -66,6 +66,13 @@ export interface UpstreamCall {
   transform?: (body: unknown) => unknown;
   /** Side effects that are only valid after a verified 2xx. Errors are swallowed. */
   onSuccess?: (session: UpstreamSession, body: unknown) => void | Promise<void>;
+  /**
+   * A file download: the 2xx body is relayed as-is instead of parsed as JSON. Honest like everything
+   * else here: only a 2xx whose Content-Type is one of `contentTypes` and whose body is not empty is
+   * relayed (anything else is a 502), only the named headers are passed on, and every refusal maps
+   * exactly as a JSON call's would.
+   */
+  raw?: { contentTypes: string[]; passHeaders: string[] };
 }
 
 export function backendUnreachable(): Response {
@@ -75,6 +82,20 @@ export function backendUnreachable(): Response {
       message: "The Tricognita API did not answer, so the result of this request could not be confirmed. Check the item's status before retrying.",
     },
     { status: 502 },
+  );
+}
+
+/**
+ * The API accepted the request but had not answered when the BFF's limit ran out. That is not "unreachable": the work
+ * (a verification, a fix) may well still be running or have finished, so the message says to look before retrying.
+ */
+export function backendTimeout(seconds: number): Response {
+  return Response.json(
+    {
+      error: "backend_timeout",
+      message: `The Tricognita API was still working after ${seconds} seconds, so the result could not be confirmed here. The work may still complete: check Verification history or the item's status before retrying.`,
+    },
+    { status: 504 },
   );
 }
 
@@ -118,11 +139,47 @@ export async function callUpstream(
       body: call.body,
       signal: AbortSignal.timeout(call.timeoutMs ?? 10_000),
     });
-  } catch {
+  } catch (e) {
+    // The browser only ever sees "could not reach the API"; the operator needs to know WHY (a timeout, a reset
+    // connection and a refused connection are different faults). Class and code only: no URL query, header or body.
+    console.error(`[bff-upstream] ${call.method ?? "GET"} ${call.path.split("?")[0]} failed: ${describeFetchError(e)}`);
+    if (e instanceof Error && e.name === "TimeoutError") return backendTimeout(Math.round((call.timeoutMs ?? 10_000) / 1000));
     return backendUnreachable();
   }
 
+  if (call.raw && upstream.ok) return relayRaw(upstream, call.raw);
   return interpretUpstream(upstream, call, session);
+}
+
+/** "TimeoutError", "TypeError/ECONNRESET", ...: the error class and the network error code, nothing else. */
+export function describeFetchError(e: unknown): string {
+  if (!(e instanceof Error)) return "unknown";
+  const cause = (e as { cause?: unknown }).cause;
+  const code = cause && typeof cause === "object" ? String((cause as { code?: unknown }).code ?? "") : "";
+  return code ? `${e.name}/${code}` : e.name;
+}
+
+async function relayRaw(upstream: Response, raw: NonNullable<UpstreamCall["raw"]>): Promise<Response> {
+  const type = (upstream.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await upstream.arrayBuffer();
+  } catch {
+    return backendUnreachable();
+  }
+  if (!raw.contentTypes.includes(type) || bytes.byteLength === 0) {
+    return Response.json(
+      { error: "backend_incomplete", message: "The Tricognita API answered, but not with a usable file. Nothing was downloaded." },
+      { status: 502 },
+    );
+  }
+  const headers = new Headers({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
+  headers.set("Content-Type", upstream.headers.get("content-type") ?? type);
+  for (const h of raw.passHeaders) {
+    const v = upstream.headers.get(h);
+    if (v) headers.set(h, v);
+  }
+  return new Response(bytes, { status: 200, headers });
 }
 
 // Keys that may carry scanner/process output or internals. Never relayed to a browser.
