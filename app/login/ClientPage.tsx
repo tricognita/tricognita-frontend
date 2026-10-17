@@ -213,7 +213,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-[11px] text-zinc-600">
-            Protected by JIT-signed sessions · SOC 2 Type II · ISO 27001
+            Protected by signed sessions · Multi-factor authentication supported
           </p>
         </div>
       </main>
