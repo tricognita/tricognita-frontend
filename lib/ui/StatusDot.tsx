@@ -54,11 +54,11 @@ const SR_DEFAULT_BY_INTENT: Record<BadgeIntent, string> = {
 
 const COLORS: Record<BadgeIntent, string> = {
   neutral: "bg-[var(--stone-400)]",
-  success: "bg-[var(--matcha-400)]",
+  success: "bg-[var(--success)]",
   warning: "bg-[var(--amber-clay)]",
   danger: "bg-[var(--ember)]",
   info: "bg-[var(--mist)]",
-  violet: "bg-[var(--matcha-500)]",
+  violet: "bg-[var(--matcha-700)]",
 };
 
 const SIZE_DOT: Record<StatusDotSize, string> = {

@@ -12,32 +12,53 @@
    Do NOT consume these in new work; use the canonical roles above.
    ══════════════════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   Everything below is DEPRECATED — migration aliases only, onto the canonical
+   vocabulary in styles/tokens/semantic.css (--surface-*, --border-*, --text-*,
+   --brand-*, --status-*, --evidence-*). Do NOT add new consumers of these
+   legacy names; they exist purely so existing dashboard/marketing code
+   written against "matcha/moss/sage/stone/ink" or the separate "2026
+   --bg/--fg/--primary" scheme keeps rendering correctly while it migrates.
+
+   IMPORTANT — this block used to independently REDECLARE --fg and --font-mono
+   with different values than semantic.css's canonical definitions of those
+   exact names. Because both are set at `:root`, the declaration later in
+   source order silently won — meaning every "canonical, frozen v1" component
+   (app/components/product/**, the /dev/* specimens) was actually rendering
+   with this block's --fg (#F8F9FA / #14121C), not the intended bone-100 /
+   ink-900. Both names are now removed from this file entirely so the
+   canonical value in semantic.css is the only definition and wins
+   everywhere, in both themes. ═══════════════════════════════════════════════ */
+
 :root {
   color-scheme: dark;
 
-  /* ── Surfaces ──────────────────────────────────────────── */
-  --ink:        #0B0914;      /* deep dark purple/black */
-  --ink-deep:   #05040A;      /* below-surface void */
-  --moss:       #120F22;      /* primary surface */
-  --moss-rise:  #1A1533;      /* raised card */
-  --moss-hi:    #221C44;      /* hover/high surface */
-  --sage:       #2D2459;      /* border on light surfaces */
-  --sage-soft:  #1E183D;      /* border on dark surfaces */
+  /* Surfaces → canonical surface-* */
+  --ink:        var(--surface-base);
+  --ink-deep:   var(--surface-canvas);
+  --moss:       var(--surface-raised);
+  --moss-rise:  var(--surface-overlay);
+  --moss-hi:    var(--border-subtle);   /* shares graphite-700 with border-subtle by design */
+  --sage:       var(--border-default);
+  --sage-soft:  var(--border-subtle);
 
-  /* ── Brand accent scale (Purple/Indigo) ───────────────────────────────── */
-  --matcha-50:  #F5F3FF;
-  --matcha-100: #EDE9FE;
-  --matcha-200: #DDD6FE;
-  --matcha-300: #C4B5FD;      /* Soft Lavender */
-  --matcha-400: #A78BFA;
-  --matcha-500: #8B5CF6;
-  --matcha-600: #7C3AED;      /* Primary Purple */
-  --matcha-700: #6D28D9;
-  --matcha-800: #5B21B6;
-  --matcha-900: #4C1D95;
+  /* Royal Violet → canonical brand-* */
+  --matcha-50:  var(--brand-50);
+  --matcha-100: var(--brand-100);
+  --matcha-200: var(--brand-200);
+  --matcha-300: var(--brand-300);
+  --matcha-400: var(--brand-400);
+  --matcha-500: var(--brand-500);
+  --matcha-600: var(--brand-600);
+  --matcha-700: var(--brand-700);
+  --matcha-800: var(--brand-800);
+  --matcha-900: var(--brand-900);
 
-  /* ── Stone neutrals (slate tuned to warm green) ────────── */
-  --stone-50:   #F8F9FA;
+  /* Stone neutrals — no clean 1:1 (canonical only defines 3 text tiers vs.
+     this scale's 6). stone-50 is aliased since it maps cleanly onto
+     --text-primary and is the highest-traffic name in the scale; the rest
+     stay literal, deprecated in place, pending a future migration pass. */
+  --stone-50:   var(--text-primary);
   --stone-200:  #E2E8F0;
   --stone-300:  #CBD5E1;
   --stone-400:  #94A3B8;
@@ -45,83 +66,87 @@
   --stone-600:  #475569;
   --stone-700:  #334155;
 
-  /* ── Intents ───────────────────────────────────────────── */
-  --ember:      #F43F5E;      /* Rose */
-  --ember-glow: #FB7185;
-  --amber-clay: #F59E0B;      /* Amber */
-  --mist:       #38BDF8;      /* Sky */
-  --success:    #10B981;      /* Emerald 500 — canonical success (previously untokenized) */
+  /* Intents → canonical status-* */
+  --ember:      var(--status-danger);
+  --ember-glow: #FB7185;      /* lighter danger tint — no canonical equivalent yet */
+  --amber-clay: var(--status-warning);
+  --mist:       var(--status-info);
+  --success:    var(--status-success);
 
-  /* ── 2026 semantic theme tokens (DARK defaults; light overrides below) ─────
-     One [data-theme] switch drives both themes — no duplicated component code. */
-  --bg:            #0B0914;
-  --bg-deep:       #05040A;
-  --surface:       rgba(255,255,255,0.032);   /* glass fill on dark */
-  --surface-solid: #120F22;
-  --surface-2:     #1A1533;
-  --hair:          rgba(255,255,255,0.08);    /* hairline border */
+  /* "2026" scheme → canonical surface and brand roles */
+  --bg:            var(--surface-canvas);
+  --bg-deep:       var(--surface-canvas);
+  --surface:       rgba(255,255,255,0.032);   /* glass fill — no canonical equivalent */
+  --surface-solid: var(--surface-raised);
+  --surface-2:     var(--surface-overlay);
+  --hair:          rgba(255,255,255,0.08);    /* no canonical equivalent */
   --hair-strong:   rgba(255,255,255,0.14);
-  --fg:            #F8F9FA;
-  --muted:         #A6A2BC;
-  --subtle:        #6B6884;
-  --primary:       #8B5CF6;                   /* brighter violet reads better on ink */
-  --primary-strong:#7C3AED;
+  --muted:         #A6A2BC;                   /* no canonical equivalent; near --text-secondary */
+  --subtle:        #6B6884;                   /* no canonical equivalent; near --text-tertiary */
+  --primary:       var(--brand-primary);
+  --primary-strong:var(--brand-hover);
   --on-primary:    #FFFFFF;
-  --accent:        #C4B5FD;                   /* lavender */
-  --ring:          #8B5CF6;
-  --glow:          rgba(124,58,237,0.24);
+  --accent:        var(--brand-subtle);
+  --ring:          var(--brand-primary);
+  --glow:          rgba(109,40,217,0.18);
   --glow-2:        rgba(56,189,248,0.10);
-  --nav-bg:        rgba(11,9,20,0.55);
-  --mark-filter:   none;                      /* white mark shows as-is on dark */
+  --nav-bg:        rgba(11,15,25,0.75);
+  --mark-filter:   none;
 
-  /* ── Rhythm ────────────────────────────────────────────── */
+  /* Rhythm — no canonical equivalent defined yet; kept as-is */
   --radius-sm:  6px;
   --radius:     12px;
   --radius-lg:  20px;
   --radius-xl:  28px;
 
-  /* Restrained shadows — no brand glow on resting surfaces.
-     --shadow-soft is the default for every Card (neutral depth);
-     --shadow-glow is reserved for interactive emphasis (focus/hover on
-     KPI tiles, primary CTAs) and uses brand accent at lowered saturation. */
   --shadow-soft: 0 1px 0 rgba(255,255,255,0.02) inset,
                  0 12px 32px -20px rgba(0,0,0,0.55);
   --shadow-glow: 0 0 0 1px rgba(124,58,237,0.16),
                  0 8px 22px -10px rgba(124,58,237,0.12);
 
-  /* ── Background aliases ───────────────────────────────── */
   --background: var(--ink);
   --foreground: var(--stone-50);
 
-  /* ── Typography ────────────────────────────────────────── */
   --font-serif:  var(--font-fraunces), ui-serif, Georgia, serif;
-  /* next/font sets --font-geist-sans / --font-geist-mono in layout.tsx */
   --font-sans:   var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono:   var(--font-geist-mono), ui-monospace, monospace;
 }
 
-/* ── LIGHT THEME — designed independently, not an inversion (Stripe/Anthropic-clean) ── */
+/* ── LIGHT THEME — aliases resolve through semantic.css's own light overrides,
+   so no separate light-mode values are needed here beyond the two literal
+   colors (muted/subtle/hair/surface) that have no canonical equivalent. ── */
 [data-theme="light"] {
   color-scheme: light;
-  --bg:            #FBFAF9;
-  --bg-deep:       #F4F1FB;
+  --ink:        var(--surface-base);
+  --ink-deep:   var(--surface-canvas);
+  --moss:       var(--surface-raised);
+  --moss-rise:  var(--surface-overlay);
+  --moss-hi:    var(--border-subtle);
+  --sage:       var(--border-default);
+  --sage-soft:  var(--border-subtle);
+  --stone-50:   var(--text-primary);
+  --ember:      var(--status-danger);
+  --amber-clay: var(--status-warning);
+  --mist:       var(--status-info);
+  --success:    var(--status-success);
+
+  --bg:            var(--surface-canvas);
+  --bg-deep:       var(--surface-canvas);
   --surface:       rgba(255,255,255,0.70);
-  --surface-solid: #FFFFFF;
-  --surface-2:     #F6F3FF;
+  --surface-solid: var(--surface-raised);
+  --surface-2:     var(--surface-overlay);
   --hair:          #E9E6EF;
   --hair-strong:   #D9D4E4;
-  --fg:            #14121C;
   --muted:         #5A566B;
   --subtle:        #857F98;
-  --primary:       #6D28D9;      /* darkened for AA on white */
-  --primary-strong:#5B21B6;
+  --primary:       var(--brand-primary);
+  --primary-strong:var(--brand-hover);
   --on-primary:    #FFFFFF;
-  --accent:        #7C3AED;
-  --ring:          #6D28D9;
+  --accent:        var(--brand-subtle);
+  --ring:          var(--brand-primary);
   --glow:          rgba(124,58,237,0.13);
   --glow-2:        rgba(56,189,248,0.07);
   --nav-bg:        rgba(255,255,255,0.62);
-  --mark-filter:   invert(1);                 /* white mark → near-ink on light */
+  --mark-filter:   invert(1);
   --background:    var(--bg);
   --foreground:    var(--fg);
 }
@@ -218,6 +243,41 @@
   --color-cognita-2:       var(--cognita-2);
   --color-cognita-3:       var(--cognita-3);
   --color-cognita-4:       var(--cognita-4);
+
+  /* ────────────────────────────────────────────────────────────────────────
+     CANONICAL PUBLIC VOCABULARY → Tailwind utilities. Generates:
+     bg-surface-canvas/base/raised/overlay, border-border-strong (subtle/
+     default already exist as border-graticule/border-graticule-strong),
+     bg-/text-/border-/ring-brand-{50..900,primary,hover,subtle},
+     bg-/text-/border-status-{success,warning,danger,info},
+     bg-/text-/border-evidence-{verified,pending,failed}. text-primary/
+     secondary/tertiary are intentionally NOT aliased here (would collide
+     with the `text-` utility prefix) — use `text-[var(--text-primary)]`,
+     consistent with existing bracket-syntax usage across lib/ui.
+     ──────────────────────────────────────────────────────────────────────── */
+  --color-surface-canvas:  var(--surface-canvas);
+  --color-surface-base:    var(--surface-base);
+  --color-surface-raised:  var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-border-strong:   var(--border-strong);
+
+  --color-brand-50:  var(--brand-50);   --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);  --color-brand-900: var(--brand-900);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-hover:    var(--brand-hover);
+  --color-brand-subtle:   var(--brand-subtle);
+
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger:  var(--status-danger);
+  --color-status-info:    var(--status-info);
+
+  --color-evidence-verified: var(--evidence-verified);
+  --color-evidence-pending:  var(--evidence-pending);
+  --color-evidence-failed:   var(--evidence-failed);
 
   --radius-panel:          var(--radius-panel);
   --radius-curl:           var(--radius-curl);
@@ -338,12 +398,12 @@ body > * { position: relative; z-index: 2; }
   font-size: 14px;
   letter-spacing: 0.01em;
   color: #ffffff;
-  background: var(--matcha-600);
-  border: 1px solid var(--matcha-500);
+  background: var(--matcha-700);
+  border: 1px solid var(--matcha-800);
   border-radius: 6px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.12),
               0 1px 0 rgba(0,0,0,0.18),
-              0 6px 16px -8px rgba(124,58,237,0.35);
+              0 6px 16px -8px rgba(109,40,217,0.35);
   transition: transform .22s ease, box-shadow .3s ease, filter .3s ease;
 }
 .btn-matcha:hover {

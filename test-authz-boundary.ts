@@ -65,6 +65,7 @@ const adminOnly = [
   "/api/admin/deployment-verify",
   "/api/admin/exports/siem.ndjson",
   "/api/aria/config/healing-mode",
+  "/api/admin/incidents", // handler 403s every non-ADMIN on GET/POST/PATCH; middleware matches (LOOP2-A-1)
 ];
 for (const p of adminOnly) {
   const r = apiRequiredRoles(p);
@@ -77,7 +78,7 @@ for (const p of ["/api/auth/login", "/api/healthz", "/api/leads", "/api/marketin
 }
 
 // ── 5. authenticated any-role routes preserved ──
-for (const p of ["/api/auth/me", "/api/usage", "/api/notifications", "/api/admin/incidents", "/api/version"]) {
+for (const p of ["/api/auth/me", "/api/usage", "/api/notifications", "/api/onboarding/status", "/api/version"]) {
   check(`any-role: ${p}`, apiRequiredRoles(p) === "any");
 }
 

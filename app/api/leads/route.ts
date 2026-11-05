@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { submitLead, LEAD_KINDS, type LeadKind } from "@/lib/leads";
+import { LEAD_CONFIRMATION } from "@/lib/lead-kinds";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -132,10 +133,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     {
       ok: true,
       status: result.status,
-      message:
-        result.status === "deduped"
-          ? "We already have your details from a recent submission. We'll be in touch."
-          : "Thanks. We'll be in touch within 1–2 business days.",
+      // No response-time promise: the founder triages leads by hand.
+      message: result.status === "deduped" ? LEAD_CONFIRMATION.deduped : LEAD_CONFIRMATION.stored,
     },
     { status: 201 },
   );

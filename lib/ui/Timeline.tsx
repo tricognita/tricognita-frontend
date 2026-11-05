@@ -92,20 +92,20 @@ interface TimelineItemProps extends Omit<React.LiHTMLAttributes<HTMLLIElement>, 
 
 const DOT_COLOR: Record<BadgeIntent, string> = {
   neutral: "bg-[var(--stone-400)]",
-  success: "bg-[var(--matcha-400)]",
+  success: "bg-[var(--success)]",
   warning: "bg-[var(--amber-clay)]",
   danger: "bg-[var(--ember)]",
   info: "bg-[var(--mist)]",
-  violet: "bg-[var(--matcha-500)]",
+  violet: "bg-[var(--matcha-700)]",
 };
 
 const DOT_RING: Record<BadgeIntent, string> = {
   neutral: "ring-[var(--stone-400)]/30",
-  success: "ring-[var(--matcha-400)]/30",
+  success: "ring-[var(--success)]/30",
   warning: "ring-[var(--amber-clay)]/30",
   danger: "ring-[var(--ember)]/30",
   info: "ring-[var(--mist)]/30",
-  violet: "ring-[var(--matcha-500)]/30",
+  violet: "ring-[var(--matcha-700)]/30",
 };
 
 const DOT_SIZE: Record<TimelineDensity, string> = {

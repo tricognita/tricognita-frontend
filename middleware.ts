@@ -17,7 +17,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, isRoleAllowed, sessionCookieName } from "@/lib/auth";
-import { apiRequiredRoles } from "@/lib/api-authz";
+import { apiRequiredRoles, roleMayCallApi, isPlatformOnlyApi } from "@/lib/api-authz";
+import { PLATFORM_TENANT } from "@/lib/tenant-assign";
+import { isPlatformOnlyPage } from "@/lib/dashboard-authz";
+import { buildAllowedOrigins, isOriginAllowed } from "@/lib/csrf-origins";
 
 // ── Security headers added to every response ─────────────────────────────────
 //
@@ -39,16 +42,16 @@ function sec(res: NextResponse): NextResponse {
 }
 
 // ── CSRF defense — same-origin guard for state-changing API requests ─────────
-const ALLOWED_ORIGINS = new Set<string>([
-  "https://tricognita.com",
-  "https://www.tricognita.com",
-]);
+//
+// The allowlist itself (production defaults + an opt-in, non-production-only
+// CSRF_DEV_ORIGINS) lives in lib/csrf-origins.ts, which is unit tested
+// directly — see test-csrf-origins.ts. Built once at module load, matching
+// the original hardcoded Set's behaviour.
+const ALLOWED_ORIGINS = buildAllowedOrigins();
 function originAllowed(req: NextRequest): boolean {
   const m = req.method;
   if (m === "GET" || m === "HEAD" || m === "OPTIONS") return true;
-  const origin = req.headers.get("origin");
-  if (!origin) return false;
-  return ALLOWED_ORIGINS.has(origin);
+  return isOriginAllowed(req.headers.get("origin"), ALLOWED_ORIGINS);
 }
 
 // ── Main proxy handler ────────────────────────────────────────────────────────
@@ -79,7 +82,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     if (!originAllowed(req)) {
       return sec(NextResponse.json({ error: "bad_origin" }, { status: 403 }));
     }
-    const required = apiRequiredRoles(pathname);
+    const required = apiRequiredRoles(pathname, req.method);
 
     // Public API — pass through
     if (required === "public") return sec(NextResponse.next());
@@ -122,13 +125,24 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       ));
     }
 
-    // Check role
-    if (required !== "any" && !required.includes(session.role)) {
+    // Check role (and method: mutations on alert routes / API keys need a
+    // privileged role; DESIGNER is limited to its own allowlist).
+    if (!roleMayCallApi(session.role, pathname, req.method)) {
       return sec(NextResponse.json(
         {
           error: "forbidden",
-          message: `Your role '${session.role}' cannot access this resource. Required: ${(required as string[]).join(" or ")}.`,
+          message: Array.isArray(required)
+            ? `Your role '${session.role}' cannot access this resource. Required: ${required.join(" or ")}.`
+            : `Your role '${session.role}' cannot access this resource.`,
         },
+        { status: 403 }
+      ));
+    }
+
+    // Operator-only surfaces need the platform tenant as well as ADMIN.
+    if (isPlatformOnlyApi(pathname) && session.tenantId !== PLATFORM_TENANT) {
+      return sec(NextResponse.json(
+        { error: "forbidden", message: "This resource is available to the platform operator only." },
         { status: 403 }
       ));
     }
@@ -159,11 +173,38 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       return NextResponse.redirect(url);
     }
 
+    // Operator consoles are the platform tenant's alone, whatever the role.
+    if (isPlatformOnlyPage(pathname) && session.tenantId !== PLATFORM_TENANT) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      url.searchParams.set("denied", pathname);
+      return NextResponse.redirect(url);
+    }
+
     // ── Password Reset Force ────────────────────────────────────────────────
     if (session.mustReset && pathname !== "/reset-password") {
       const url = req.nextUrl.clone();
       url.pathname = "/reset-password";
       return NextResponse.redirect(url);
+    }
+
+    // ── Product front door ──────────────────────────────────────────────────
+    // /dashboard is the address every sign-in lands on, and it still resolves
+    // to the pre-Phase-1 dashboard. Send it to the product Overview instead, so
+    // the authenticated journey starts in the product rather than beside it.
+    //
+    // Placed last in this block on purpose: sign-in, authorization and the
+    // forced password reset all run first, so none of their behaviour changes —
+    // an unauthenticated visitor still goes to /login with ?next=/dashboard.
+    //
+    // No loop: /dashboard/overview matches no ROLE_ROUTES prefix and
+    // isRoleAllowed() defaults to allow, so the denial redirect above can never
+    // bounce it back here. Adding a ROLE_ROUTES rule that denies
+    // /dashboard/overview would break that invariant.
+    if (pathname === "/dashboard") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard/overview";
+      return sec(NextResponse.redirect(url));
     }
 
     const res = NextResponse.next();

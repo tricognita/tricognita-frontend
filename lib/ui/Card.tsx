@@ -11,7 +11,7 @@ import { cn } from "./cn";
  *   - elevated  → glass-like, slightly raised, with hover lift
  *   - ghost     → no border/background; useful for grouping without weight
  *   - danger    → rose-tinted border + bg; for critical states
- *   - success   → matcha-tinted; for verified/operational states
+ *   - success   → success-green-tinted; for verified/operational states
  *   - warning   → amber-tinted; for partial/pending states
  *
  * Density:
@@ -59,7 +59,7 @@ const VARIANT_CLASSES: Record<CardVariant, string> = {
   danger:
     "bg-[color-mix(in_oklch,var(--ember)_8%,var(--moss-rise))] border border-[color-mix(in_oklch,var(--ember)_30%,var(--sage-soft))]",
   success:
-    "bg-[color-mix(in_oklch,var(--matcha-600)_6%,var(--moss-rise))] border border-[color-mix(in_oklch,var(--matcha-400)_24%,var(--sage-soft))]",
+    "bg-[color-mix(in_oklch,var(--success)_6%,var(--moss-rise))] border border-[color-mix(in_oklch,var(--success)_24%,var(--sage-soft))]",
   warning:
     "bg-[color-mix(in_oklch,var(--amber-clay)_8%,var(--moss-rise))] border border-[color-mix(in_oklch,var(--amber-clay)_28%,var(--sage-soft))]",
 };

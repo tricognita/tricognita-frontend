@@ -178,6 +178,6 @@ This should be extraordinarily rare. If it happens:
 ## Related documents
 
 - [`BRANCH_STRATEGY.md`](./BRANCH_STRATEGY.md) — branch naming, workflow, and merge rules
-- [`RELEASE_PROCESS.md`](./RELEASE_PROCESS.md) — release checklist and versioning
+- [`RELEASE_PROCESS.md`](../../docs/13_Deployment/RELEASE_PROCESS.md) — release checklist and versioning
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contributor setup and PR process
 - [`../../.github/CODEOWNERS`](../../.github/CODEOWNERS) — code ownership and review requirements

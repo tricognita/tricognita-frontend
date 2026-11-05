@@ -106,7 +106,7 @@ Documentation PRs follow the standard flow but may optionally target `main` dire
 
 ### Release flow
 
-See [`RELEASE_PROCESS.md`](./RELEASE_PROCESS.md) for the full release process.
+See [`RELEASE_PROCESS.md`](../../docs/13_Deployment/RELEASE_PROCESS.md) for the full release process.
 
 ## Branch naming conventions
 

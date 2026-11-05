@@ -12,11 +12,11 @@ import { cn } from "./cn";
  *
  * Intent palette is tied to the design token system, NOT raw Tailwind colors:
  *   neutral  → stone
- *   success  → matcha (verified, operational, approved)
+ *   success  → success green (verified, operational, approved)
  *   warning  → amber-clay (pending, operator-tier, degraded)
  *   danger   → ember (critical, denied, failed)
  *   info     → mist (auto-tier, informational)
- *   violet   → matcha-600 (brand accent — use sparingly)
+ *   violet   → matcha-700 (Royal Violet brand accent — use sparingly, never for status)
  *
  * Variants:
  *   subtle (default) → tinted bg + matching ring; primary use
@@ -59,7 +59,7 @@ const SUBTLE_INTENTS: Record<BadgeIntent, string> = {
   neutral:
     "bg-[var(--stone-500)]/10 text-[var(--stone-300)] ring-1 ring-inset ring-[var(--stone-500)]/30",
   success:
-    "bg-[var(--matcha-400)]/10 text-[var(--matcha-300)] ring-1 ring-inset ring-[var(--matcha-400)]/30",
+    "bg-[var(--success)]/10 text-[var(--success)] ring-1 ring-inset ring-[var(--success)]/30",
   warning:
     "bg-[var(--amber-clay)]/10 text-[var(--amber-clay)] ring-1 ring-inset ring-[var(--amber-clay)]/30",
   danger:
@@ -67,12 +67,12 @@ const SUBTLE_INTENTS: Record<BadgeIntent, string> = {
   info:
     "bg-[var(--mist)]/10 text-[var(--mist)] ring-1 ring-inset ring-[var(--mist)]/30",
   violet:
-    "bg-[var(--matcha-600)]/15 text-[var(--matcha-200)] ring-1 ring-inset ring-[var(--matcha-600)]/40",
+    "bg-[var(--matcha-700)]/15 text-[var(--matcha-200)] ring-1 ring-inset ring-[var(--matcha-700)]/40",
 };
 
 const SOLID_INTENTS: Record<BadgeIntent, string> = {
   neutral: "bg-[var(--stone-600)] text-[var(--stone-50)]",
-  success: "bg-[var(--matcha-600)] text-white",
+  success: "bg-[var(--success)] text-white",
   warning: "bg-[var(--amber-clay)] text-[var(--ink)]",
   danger: "bg-[var(--ember)] text-white",
   info: "bg-[var(--mist)] text-[var(--ink)]",
@@ -81,20 +81,20 @@ const SOLID_INTENTS: Record<BadgeIntent, string> = {
 
 const OUTLINE_INTENTS: Record<BadgeIntent, string> = {
   neutral: "bg-transparent text-[var(--stone-300)] ring-1 ring-[var(--stone-500)]/50",
-  success: "bg-transparent text-[var(--matcha-300)] ring-1 ring-[var(--matcha-400)]/50",
+  success: "bg-transparent text-[var(--success)] ring-1 ring-[var(--success)]/50",
   warning: "bg-transparent text-[var(--amber-clay)] ring-1 ring-[var(--amber-clay)]/50",
   danger: "bg-transparent text-[var(--ember-glow)] ring-1 ring-[var(--ember)]/50",
   info: "bg-transparent text-[var(--mist)] ring-1 ring-[var(--mist)]/50",
-  violet: "bg-transparent text-[var(--matcha-300)] ring-1 ring-[var(--matcha-500)]/50",
+  violet: "bg-transparent text-[var(--matcha-300)] ring-1 ring-[var(--matcha-700)]/50",
 };
 
 const DOT_COLORS: Record<BadgeIntent, string> = {
   neutral: "bg-[var(--stone-400)]",
-  success: "bg-[var(--matcha-400)]",
+  success: "bg-[var(--success)]",
   warning: "bg-[var(--amber-clay)]",
   danger: "bg-[var(--ember)]",
   info: "bg-[var(--mist)]",
-  violet: "bg-[var(--matcha-500)]",
+  violet: "bg-[var(--matcha-700)]",
 };
 
 const SIZE_CLASSES: Record<BadgeSize, string> = {

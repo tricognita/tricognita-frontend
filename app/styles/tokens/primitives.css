@@ -13,14 +13,14 @@
 
 :root {
   /* ── Graphite ramp — the console substrate (cool near-black) ───────────────── */
-  --_graphite-950: #08090B;   /* void — below-surface */
-  --_graphite-900: #0B0C0E;   /* canvas — the console */
-  --_graphite-850: #101216;
-  --_graphite-800: #131519;   /* instrument panel */
-  --_graphite-750: #191C21;   /* raised panel */
-  --_graphite-700: #20242B;   /* graticule / hairline */
-  --_graphite-600: #2A2F37;   /* hairline — strong */
-  --_graphite-500: #3A4049;
+  --_graphite-950: #05060A;   /* void — below-surface */
+  --_graphite-900: #0B0F19;   /* canvas — the console */
+  --_graphite-850: #0F131E;
+  --_graphite-800: #131627;   /* instrument panel */
+  --_graphite-750: #181C30;   /* raised panel */
+  --_graphite-700: #20243D;   /* graticule / hairline */
+  --_graphite-600: #2C3252;   /* hairline — strong */
+  --_graphite-500: #3E4670;
 
   /* ── Bone — text on graphite (warm, not pure white) ───────────────────────── */
   --_bone-100: #E9E7E1;       /* primary text */
@@ -35,6 +35,23 @@
   --_advisory-500: #E0A73B; --_advisory-600: #C08A24; --_advisory-300: #EDBE63;
   --_halt-500: #E24A3B;     --_halt-600: #C23A2D;     --_halt-300: #EE7266;
 
+  /* ── Info — a fifth state hue for "informational" status (auto-tier,
+     read-only telemetry). Distinct from the four Visual OS state colors above
+     AND from brand violet below — status meaning must never double as brand. */
+  --_info-500: #4FA8D8;     --_info-600: #3B8AB8;     --_info-300: #86C6E8;
+  --_info-ink: #1F6B93;     /* deepened for AA on paper */
+
+  /* ── Royal Violet — Tricognita's controlled BRAND signal. Never used for
+     status/success meaning (see nominal/success above/below). Reserved for:
+     brand mark, primary interaction, selected/active states, focus, evidence
+     relationships. A deliberate deep jewel-tone, not a bright generic SaaS
+     purple — the "primary" reference sits at 700/800, not 400/500. ────────── */
+  --_brand-50:  #F5F3FF;  --_brand-100: #EDE9FE;  --_brand-200: #DDD6FE;
+  --_brand-300: #C4B5FD;  --_brand-400: #A78BFA;  --_brand-500: #8B5CF6;
+  --_brand-600: #7C3AED;  --_brand-700: #6D28D9;  --_brand-800: #5B21B6;
+  --_brand-900: #4C1D95;
+  --_brand-ink: #6423C7;   /* deepened for AA on paper */
+
   /* ── Cognita colormap — perceptual ramp; color == evidence value ──────────── */
   /* Used ONLY inside the Evidence Graph / data surfaces (Visual OS System II).  */
   --_cognita-0: #161033;
@@ -44,15 +61,15 @@
   --_cognita-4: #E9E7E1;
 
   /* ── Paper ramp — the light theme (designed, not an inversion) ────────────── */
-  --_paper-000: #FBFAF6;      /* raised on paper */
-  --_paper-100: #EDEBE4;      /* canvas */
-  --_paper-200: #F4F2EC;      /* panel */
-  --_paper-line: #D6D3C9;     /* graticule on paper */
-  --_paper-line-strong: #C3BFB2;
+  --_paper-000: #FFFFFF;      /* raised on paper */
+  --_paper-100: #F8FAFC;      /* canvas */
+  --_paper-200: #FFFFFF;      /* panel */
+  --_paper-line: #E2E8F0;     /* graticule on paper */
+  --_paper-line-strong: #CBD5E1;
 
-  --_ink-900: #0B0C0E;        /* primary text on paper */
-  --_ink-500: #565A5E;        /* secondary — AA on paper */
-  --_ink-700: #7C8085;        /* tertiary */
+  --_ink-900: #0F172A;        /* primary text on paper */
+  --_ink-500: #64748B;        /* secondary — AA on paper */
+  --_ink-700: #475569;        /* tertiary */
 
   /* State hues deepened for AA on paper (small-text safe). */
   --_nominal-ink: #2E8F68;

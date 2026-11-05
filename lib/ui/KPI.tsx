@@ -61,7 +61,7 @@ interface KPIProps {
 
 const INTENT_VALUE_COLOR: Record<KPIIntent, string> = {
   neutral: "text-[var(--stone-50)]",
-  success: "text-[var(--matcha-300)]",
+  success: "text-[var(--success)]",
   warning: "text-[var(--amber-clay)]",
   danger: "text-[var(--ember)]",
   info: "text-[var(--mist)]",

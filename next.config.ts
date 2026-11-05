@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { RETIRED_ROUTES } from "./lib/marketing/site";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -29,7 +30,8 @@ const securityHeaders = [
       "default-src 'self'",
       // Cloudflare insights script is loaded by the Cloudflare proxy when
       // the route is served through cloudflare.com — keep allowlisted.
-      "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+      // React dev mode needs eval; never in production builds.
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://static.cloudflareinsights.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://avatars.githubusercontent.com",
@@ -42,7 +44,8 @@ const securityHeaders = [
       "manifest-src 'self'",        // explicit (defaults to self but document)
       "base-uri 'self'",
       "form-action 'self'",
-      "upgrade-insecure-requests",
+      // Upgrading localhost http to https breaks `next dev`; production always keeps it.
+      ...(process.env.NODE_ENV === "production" ? ["upgrade-insecure-requests"] : []),
     ].join("; "),
   },
   // 2-year HSTS, includeSubDomains, preload-eligible.
@@ -79,6 +82,11 @@ const nextConfig: NextConfig = {
   // Pin Turbopack workspace root to this directory so it doesn't traverse up
   // to the repo-root package-lock.json and pick the wrong workspace root.
   turbopack: { root: __dirname },
+  // Retired and moved marketing routes (MARKETING_SITEMAP.md §4): permanent
+  // redirects so old links and search results land on the new pages.
+  async redirects() {
+    return RETIRED_ROUTES.map((r) => ({ source: r.source, destination: r.destination, permanent: true }));
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

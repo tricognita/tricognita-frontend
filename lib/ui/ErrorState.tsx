@@ -58,7 +58,7 @@ const VARIANT_DEFAULTS: Record<ErrorStateVariant, { title: string; icon: React.R
   offline: {
     title: "Backend unreachable",
     icon: <WifiOff size={20} />,
-    iconColor: "text-[var(--stone-400)]",
+    iconColor: "text-[var(--fg-muted)]",
     surface: "bg-[var(--moss-rise)] border border-[var(--sage-soft)]",
   },
   denied: {
@@ -101,9 +101,9 @@ export function ErrorState({
         <div className="flex flex-col items-center gap-3">
           <span className={cn("inline-flex", defaults.iconColor)}>{resolvedIcon}</span>
           <div>
-            <p className="text-sm font-semibold text-[var(--stone-100)]">{resolvedTitle}</p>
+            <p className="text-sm font-semibold text-[var(--fg)]">{resolvedTitle}</p>
             {description && (
-              <p className="text-xs text-[var(--stone-400)] mt-1 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-[var(--fg-muted)] mt-1 max-w-md mx-auto leading-relaxed">
                 {description}
               </p>
             )}
@@ -121,9 +121,9 @@ export function ErrorState({
             {resolvedIcon}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-[var(--stone-100)]">{resolvedTitle}</p>
+            <p className="text-sm font-semibold text-[var(--fg)]">{resolvedTitle}</p>
             {description && (
-              <p className="text-xs text-[var(--stone-400)] mt-0.5 leading-relaxed">
+              <p className="text-xs text-[var(--fg-muted)] mt-0.5 leading-relaxed">
                 {description}
               </p>
             )}

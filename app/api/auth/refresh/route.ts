@@ -79,8 +79,8 @@ export async function POST(req: Request): Promise<Response> {
   // Deleting first prevents a race: two concurrent refreshes can't both succeed.
   await deleteRefreshToken(token);
 
-  const newRefreshToken = await signRefreshToken(payload.email, payload.role, payload.tenantId);
-  const newAccessToken  = await signSession(payload.email, payload.role, payload.tenantId, ua);
+  const newRefreshToken = await signRefreshToken(payload.email, payload.role, payload.tenantId, payload.mfa === true);
+  const newAccessToken  = await signSession(payload.email, payload.role, payload.tenantId, ua, false, payload.mfa === true);
 
   await storeRefreshToken(newRefreshToken, {
     email:     payload.email,

@@ -57,6 +57,61 @@
   --focus-ring-offset: 2px;
   --tap-min:           44px;   /* WCAG 2.5.5 minimum target */
   --disabled-opacity:  0.45;
+
+  /* ────────────────────────────────────────────────────────────────────────
+     CANONICAL PUBLIC VOCABULARY — the ONLY names new code should reference.
+     These are additive aliases onto the roles above; they exist so the
+     public API reads by function (surface/border/text/brand/status/evidence)
+     rather than by the more internal Visual-OS names (void/substrate/panel/
+     graticule/nominal/engaged/…), which remain valid but are the *internal*
+     layer this vocabulary is built from. Legacy names in globals.css
+     (--matcha-*, --moss, --sage, --ink, --stone-*, --ember, --amber-clay,
+     --mist) are DEPRECATED migration aliases onto THIS layer, not the other
+     way around — this block is the source of truth.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  /* Surfaces */
+  --surface-canvas:  var(--void);
+  --surface-base:    var(--substrate);
+  --surface-raised:  var(--panel);
+  --surface-overlay: var(--panel-raised);
+
+  /* Borders */
+  --border-subtle:  var(--graticule);
+  --border-default: var(--graticule-strong);
+  --border-strong:  var(--_graphite-500);
+
+  /* Text */
+  --text-primary:   var(--fg);
+  --text-secondary: var(--fg-muted);
+  --text-tertiary:  var(--fg-subtle);
+
+  /* Brand — Royal Violet. Reserved for brand/interaction/relationship
+     signal only; never a status meaning (see --status-* below). */
+  --brand-50:  var(--_brand-50);   --brand-100: var(--_brand-100);
+  --brand-200: var(--_brand-200);  --brand-300: var(--_brand-300);
+  --brand-400: var(--_brand-400);  --brand-500: var(--_brand-500);
+  --brand-600: var(--_brand-600);  --brand-700: var(--_brand-700);
+  --brand-800: var(--_brand-800);  --brand-900: var(--_brand-900);
+  --brand-primary: var(--_brand-700);
+  --brand-hover:   var(--_brand-800);
+  --brand-subtle:  var(--_brand-300);
+
+  /* Status — independent of brand. success/warning/danger/info. */
+  --status-success: var(--state-nominal);
+  --status-warning: var(--state-advisory);
+  --status-danger:  var(--state-halt);
+  --status-info:    var(--_info-500);
+
+  /* Evidence object states — semantically scoped to evidence/provenance UI
+     (Findings, Compliance, ARIA, Audit, future Reports/Evidence Graph), even
+     though they currently share color with the equivalent --status-* role. */
+  --evidence-verified: var(--status-success);
+  --evidence-pending:  var(--status-warning);
+  --evidence-failed:   var(--status-danger);
+
+  /* Focus — the exact requested name, aliasing the existing role above. */
+  --focus-ring: var(--focus-ring-color);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
@@ -87,6 +142,15 @@
   --on-state:             var(--_paper-000);
 
   --focus-ring-color:     var(--_ink-900);
+
+  /* Canonical vocabulary — light-theme deepened variants (AA on paper).
+     Surfaces/borders/text/evidence-* inherit correctly from the overrides
+     above with no extra work since they're aliases of theme-aware roles;
+     only brand and info need their own deepened value on light. */
+  --status-info:   var(--_info-ink);
+  --brand-primary: var(--_brand-ink);
+  --brand-hover:   var(--_brand-ink);
+  --focus-ring:    var(--focus-ring-color);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ import { cn } from "./cn";
  *
  * Intents (color of the number):
  *   - neutral (default) → text-stone-50
- *   - success           → text-matcha-300
+ *   - success           → text-success (green, independent of brand violet)
  *   - warning           → text-amber-clay
  *   - danger            → text-ember
  *   - info              → text-mist
@@ -59,7 +59,7 @@ const SIZE_CLASSES: Record<StatSize, { label: string; value: string }> = {
 
 const INTENT_CLASSES: Record<StatIntent, string> = {
   neutral: "text-[var(--stone-50)]",
-  success: "text-[var(--matcha-300)]",
+  success: "text-[var(--success)]",
   warning: "text-[var(--amber-clay)]",
   danger: "text-[var(--ember)]",
   info: "text-[var(--mist)]",

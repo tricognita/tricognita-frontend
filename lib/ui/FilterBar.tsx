@@ -53,7 +53,7 @@ export function FilterBar({
       <div className="flex items-center gap-1.5 flex-wrap">{children}</div>
       <div className="flex items-center gap-3 ml-auto">
         {label && (
-          <span className="text-[10px] font-mono text-[var(--stone-600)] uppercase tracking-widest">
+          <span className="text-[10px] font-mono text-[var(--stone-400)] uppercase tracking-widest">
             {label}
           </span>
         )}
@@ -83,7 +83,7 @@ const ACTIVE_INTENT: Record<FilterChipIntent, string> = {
   neutral:
     "bg-[var(--matcha-300)]/15 text-[var(--matcha-200)] ring-1 ring-inset ring-[var(--matcha-300)]/30",
   success:
-    "bg-[var(--matcha-400)]/15 text-[var(--matcha-300)] ring-1 ring-inset ring-[var(--matcha-400)]/30",
+    "bg-[var(--success)]/15 text-[var(--success)] ring-1 ring-inset ring-[var(--success)]/30",
   warning:
     "bg-[var(--amber-clay)]/15 text-[var(--amber-clay)] ring-1 ring-inset ring-[var(--amber-clay)]/30",
   danger:
@@ -119,7 +119,7 @@ export function FilterChip({
         <span
           className={cn(
             "tabular-nums",
-            active ? "opacity-80" : "text-[var(--stone-600)]",
+            active ? "opacity-80" : "text-[var(--stone-400)]",
           )}
         >
           {count}

@@ -1,4 +1,4 @@
-import { GO_API } from "@/lib/jit-secret";
+import { persistClientAuditEvent } from "@/lib/bff-upstream";
 import { authedRoute, logRoute } from "@/lib/bff-log";
 
 export const runtime = "nodejs";
@@ -19,10 +19,10 @@ export const dynamic = "force-dynamic";
  *   - Event types are validated against a known allowlist; anything else
  *     is rejected so a compromised browser can't write arbitrary action
  *     names into the audit trail.
- *   - The forward to Go is best-effort with a short timeout. Failures
- *     log to the BFF observability layer so an operator can find them,
- *     but never bubble back to the user — auditing is a side-effect, not
- *     a precondition.
+ *   - `accepted: true` is returned only after the Go API confirmed the write.
+ *     A failed persistence is a 502 `audit_not_persisted` (and an error log),
+ *     never a silent success. Browser callers stay fire-and-forget, so a
+ *     failure does not block the user flow, but it is no longer hidden.
  */
 
 const ALLOWED_EVENT_TYPES = new Set<string>([
@@ -100,39 +100,12 @@ export const POST = authedRoute(async ({ ctx, session, token, req }) => {
     },
   };
 
-  logRoute(ctx, "info", "audit.client_event.accepted", {
-    type: body.type,
-    resource: auditRow.resource,
-    tenant_id: session.tenantId,
-  });
-
-  // Best-effort forward to Go. The Go side does the actual write into the
-  // hash-linked audit_logs table. If the backend is down, we still have the
-  // BFF log line above as a fallback record.
-  try {
-    const upstream = await fetch(`${GO_API}/api/audit/client-event`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "X-Request-ID": ctx.requestId,
-      },
-      body: JSON.stringify(auditRow),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!upstream.ok) {
-      logRoute(ctx, "warn", "audit.client_event.upstream_non_ok", {
-        upstream_status: upstream.status,
-      });
-    }
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    // 502 to the upstream isn't user-visible; the client fire-and-forgets.
-    logRoute(ctx, "warn", "audit.client_event.upstream_unreachable", {
-      detail,
-    });
+  // The audit write must really happen. A failed or missing persistence is reported
+  // (502) instead of acknowledged; the BFF log line is a diagnostic, not the record.
+  const persisted = await persistClientAuditEvent(auditRow, token, ctx.requestId);
+  if (!persisted.ok) {
+    logRoute(ctx, "warn", "audit.client_event.persist_failed", { reason: persisted.reason });
+    return ctx.errorJson({ error: "audit_not_persisted" }, 502);
   }
-
-  // Always succeed from the client's perspective — audit is best-effort.
   return Response.json({ accepted: true });
 });

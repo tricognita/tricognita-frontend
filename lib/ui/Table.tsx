@@ -118,7 +118,7 @@ export function TFoot({ className, children, ...rest }: React.HTMLAttributes<HTM
   return (
     <tfoot
       className={cn(
-        "border-t border-[var(--sage-soft)] bg-[var(--moss)] text-[var(--stone-400)]",
+        "border-t border-[var(--sage-soft)] bg-[var(--moss)] text-[var(--fg-muted)]",
         className,
       )}
       {...rest}
@@ -308,7 +308,7 @@ export function TD({
       className={cn(
         DENSITY_PADDING[density],
         ALIGN_CLASSES[align],
-        mono && "font-mono text-[11px] text-[var(--stone-400)]",
+        mono && "font-mono text-[11px] text-[var(--fg-muted)]",
         truncate && "max-w-0 truncate",
         width,
         className,

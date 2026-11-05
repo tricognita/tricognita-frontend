@@ -1,56 +1,61 @@
-import { cookies } from "next/headers";
-import { verifySession, sessionCookieName } from "@/lib/auth";
-import { secretOrError, GO_API } from "@/lib/jit-secret";
-import { getJitToken } from "@/lib/jit-token";
+import { callUpstream } from "@/lib/bff-upstream";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 15;
 
-async function getSession() {
-  const jar = await cookies();
-  return verifySession(jar.get(sessionCookieName())?.value);
-}
+// Alert routes. The old handlers answered `{ routes: [] }` whenever the API was
+// unreachable or refused, which presented an outage as "no routes configured".
+// Every answer here is the Go API's.
 
-export async function GET(): Promise<Response> {
-  const session = await getSession();
-  if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
+const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
+const ALLOWED = ["name", "route_type", "min_severity", "config"] as const;
 
-  const check = secretOrError();
-  if (check instanceof Response) return Response.json({ routes: [] });
-  const token = await getJitToken({ sub: session.email, tenantId: session.tenantId, role: session.role });
-
+/** A delivery URL is a credential in practice: the browser receives the host only. */
+function maskDestination(config: unknown): string {
+  if (!isObj(config)) return "";
+  const raw = config.url ?? config.webhook_url ?? config.base_url;
+  if (typeof raw !== "string" || raw === "") return "";
   try {
-    const upstream = await fetch(`${GO_API}/api/alert-routes`, {
-      headers: { Authorization: `Bearer ${token}`, "X-Initiated-By": session.email },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!upstream.ok) return Response.json({ routes: [] });
-    return Response.json(await upstream.json());
+    return `${new URL(raw).host}/…`;
   } catch {
-    return Response.json({ routes: [] });
+    return "(unreadable destination)";
   }
 }
 
-export async function POST(req: Request): Promise<Response> {
-  const session = await getSession();
-  if (!session) return Response.json({ error: "authentication_required" }, { status: 401 });
-
-  const check = secretOrError();
-  if (check instanceof Response) return check;
-  const token = await getJitToken({ sub: session.email, tenantId: session.tenantId, role: session.role });
-
-  const body = await req.json();
-  const upstream = await fetch(`${GO_API}/api/alert-routes`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "X-Initiated-By": session.email,
+export async function GET(): Promise<Response> {
+  return callUpstream({
+    path: "/api/alert-routes",
+    validate: (b) => (isObj(b) && Array.isArray(b.routes) ? null : "missing routes list"),
+    transform: (b) => {
+      const routes = (b as { routes: Array<Record<string, unknown>> }).routes.map((r) => {
+        const { config, ...rest } = r;
+        return { ...rest, destination: maskDestination(config) };
+      });
+      return { routes };
     },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10_000),
   });
-  const j = await upstream.json().catch(() => ({}));
-  return Response.json(j, { status: upstream.status });
+}
+
+export async function POST(req: Request): Promise<Response> {
+  const raw = await req.text();
+  let body = raw;
+  let bad: Response | null = null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isObj(parsed)) throw new Error("not an object");
+    const clean: Record<string, unknown> = {};
+    for (const k of ALLOWED) if (parsed[k] !== undefined) clean[k] = parsed[k];
+    body = JSON.stringify(clean);
+  } catch {
+    bad = Response.json({ error: "invalid_json", message: "The request body must be a JSON object." }, { status: 400 });
+  }
+  return callUpstream({
+    path: "/api/alert-routes",
+    method: "POST",
+    contentType: "application/json",
+    body,
+    precheck: () => bad ?? (raw.length > 8192 ? Response.json({ error: "payload_too_large" }, { status: 413 }) : null),
+    validate: (b) => (isObj(b) && typeof b.id === "string" && b.id !== "" ? null : "missing route id"),
+  });
 }

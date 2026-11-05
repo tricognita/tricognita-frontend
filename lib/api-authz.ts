@@ -90,7 +90,40 @@ export const SECOPS_API = [
   "/api/threatintel/lookup",
   "/api/k8s/audit",
   "/api/credentials",
+  "/api/assessments",
+  // Remediation (bounded). The edge grants the SECOPS tier; the precise
+  // capability is enforced per operation in the BFF route, which is the only
+  // layer that knows whether this is a read, a request or an approval.
+  // requestRemediation and approveRemediation have different role sets and
+  // apiRequiredRoles matches by path prefix alone, so it cannot tell them apart.
+  "/api/remediation",
+  // Internal E2 engine reads. Formerly open to any signed-in role; the E2
+  // engine is never readable by read-only or customer roles.
+  "/api/aria/audit-trail",
+  "/api/aria/graph",
+  "/api/aria/jobs",
+  "/api/aria/status",
+  "/api/aria/threat-intel",
 ];
+
+// Operator-only surfaces: cross-tenant rollups, platform administration, the founder inbox,
+// datasets. ADMIN is the highest role *inside a tenant*, so a customer's administrator holds it too;
+// these routes therefore also require the session to belong to the platform tenant. (The per-handler
+// checks only looked at the role, which let a customer admin read every tenant's commercial and
+// pilot-health rows.)
+export const PLATFORM_ONLY_API = ["/api/admin/", "/api/organizations", "/api/datasets"];
+
+export function isPlatformOnlyApi(path: string): boolean {
+  return PLATFORM_ONLY_API.some((p) => path === p.replace(/\/$/, "") || path.startsWith(p));
+}
+
+// The organisation's own audit trail (who did what, with actor emails and source
+// IPs). The Go API scopes it to the caller's tenant through RLS but cannot tell a
+// viewer from an auditor (its scopes are per tier, and AUTO carries audit:read for
+// the evidence surfaces), so the role split lives here and must equal the
+// `viewAuditTrail` capability in rbac.ts / rbac-roster.ts.
+export const AUDIT_EVENTS_API = ["/api/audit/events"];
+export const AUDIT_EVENTS_ROLES: Role[] = ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS"];
 
 // API paths requiring ADMIN, SECOPS, or AUDITOR (read-only compliance).
 export const AUDITOR_API = [
@@ -99,14 +132,26 @@ export const AUDITOR_API = [
   "/api/guard/report",
   "/api/audit-trail",
   "/api/findings",
+  "/api/reports",        // list and download: the exportReports roster; generating is a MUTATION_POLICY entry
+  "/api/drift",          // drift read back from the retained results
   "/api/cloud/resources",
   "/api/compliance/score",
   "/api/compliance/controls",
   "/api/assurance/control-posture",
-  "/api/assurance/coverage",
   "/api/assurance/ledger",
   "/api/assurance/verify",
   "/api/assurance/evidence",
+  // Product control surfaces (Phase 4D). Read-only, tenant-scoped server-side.
+  // AUDITOR_API grants exactly the ten roles the roster gives viewControls, so
+  // this list and lib/rbac.ts agree. apiRequiredRoles fails closed, so an
+  // unlisted route 403s — these must be named here to be reachable at all.
+  "/api/controls",
+  "/api/verification-runs",
+  "/api/cloud-accounts",
+  // Evidence (Phase 4E). AUDITOR_API is the right list for it twice over: the
+  // roster grants viewEvidence to the same roles as viewControls, and reading a
+  // chain of custody is an auditor's action.
+  "/api/evidence",
 ];
 
 // API paths accessible to ANY authenticated role. These are self-service
@@ -135,18 +180,62 @@ export const AUTHENTICATED_API = [
                                     // can't split them. Handler is the real gate.
   "/api/email-logs",
   "/api/usage",
+  "/api/onboarding/status", // tenant from the session, returns checklist booleans only (no tenant data)
   // broadly-readable feature endpoints (current behaviour preserved; candidates
   // for per-route tightening in a later milestone)
   "/api/age/graph",
   "/api/alert-routes",
   "/api/api-keys",
-  "/api/aria/audit-trail",
-  "/api/aria/graph",
-  "/api/aria/jobs",
-  "/api/aria/status",
-  "/api/aria/threat-intel",
   "/api/export",
 ];
+
+/**
+ * Mutating methods on these routes need more than the route's read policy.
+ * Listing stays with the read policy below; POST/PUT/PATCH/DELETE require the
+ * roles here. Matches the dashboard pages that manage them
+ * (/dashboard/alert-routes: ADMIN, SECOPS; /dashboard/api-keys: ADMIN).
+ */
+export const MUTATION_POLICY: Array<{ prefix: string; roles: Role[] }> = [
+  { prefix: "/api/alert-routes", roles: ["ADMIN", "SECOPS"] },
+  { prefix: "/api/api-keys",     roles: ["ADMIN"] },
+  // Generating a report writes a permanent record. The operator tier the Go API requires is exactly
+  // these roles (the same set that may run a verification); reading and downloading is wider (exportReports).
+  { prefix: "/api/reports",      roles: ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER"] },
+  // Switching an automated fix on for the organisation is an administrator's decision (the Go API also needs MFA).
+  // Reading what is on or off is not here: it stays with the remediation read surface.
+  { prefix: "/api/remediation/actions", roles: ["ADMIN"] },
+];
+
+const SAFE_METHODS = new Set(["GET", "HEAD"]);
+const isSafeMethod = (method: string) => SAFE_METHODS.has(method.toUpperCase());
+
+/**
+ * DESIGNER (future design-review account) is deny-by-default on the API as
+ * well as on pages: only these routes, only these methods. Its own session
+ * and account housekeeping, plus GET on the product read surfaces. No E2,
+ * credentials, users, alert routes, API keys, remediation, approvals, scans,
+ * verification runs, exports or admin routes.
+ */
+export const DESIGNER_API: Array<{ prefix: string; methods: string[] }> = [
+  { prefix: "/api/auth/me",             methods: ["GET"] },
+  { prefix: "/api/auth/account",        methods: ["GET"] },
+  { prefix: "/api/auth/mfa",            methods: ["GET", "POST"] },
+  { prefix: "/api/auth/password",       methods: ["POST"] },
+  { prefix: "/api/auth/refresh",        methods: ["POST"] },
+  { prefix: "/api/auth/reset-password", methods: ["POST"] },
+  { prefix: "/api/version",             methods: ["GET"] },
+  { prefix: "/api/telemetry",           methods: ["POST"] },
+  { prefix: "/api/audit/client-event",  methods: ["POST"] },
+  { prefix: "/api/controls",            methods: ["GET"] },
+  { prefix: "/api/findings",            methods: ["GET"] },
+  { prefix: "/api/evidence",            methods: ["GET"] },
+  { prefix: "/api/verification-runs",   methods: ["GET"] },
+  { prefix: "/api/assurance",           methods: ["GET"] },
+  { prefix: "/api/compliance",          methods: ["GET"] },
+  { prefix: "/api/cloud-accounts",      methods: ["GET"] },
+];
+
+const matches = (path: string, prefix: string) => path === prefix || path.startsWith(prefix + "/") || path.startsWith(prefix + "?");
 
 /**
  * apiRequiredRoles — the single authorization policy for every /api route.
@@ -158,16 +247,39 @@ export const AUTHENTICATED_API = [
  *   "deny"   — no policy matched → FAIL CLOSED (Batch 2.1). Previously this
  *              returned "any" (implicit default-allow); an unclassified route
  *              is now denied even to authenticated users.
+ *
+ * `method` defaults to GET, so read callers keep the read policy; a mutating
+ * method on a MUTATION_POLICY route gets that stricter list.
  */
-export function apiRequiredRoles(path: string): Role[] | "any" | "public" | "deny" {
+export function apiRequiredRoles(path: string, method = "GET"): Role[] | "any" | "public" | "deny" {
   if (PUBLIC_API.some(p => path.startsWith(p)))   return "public";
+  if (!isSafeMethod(method)) {
+    const guarded = MUTATION_POLICY.find(m => path.startsWith(m.prefix));
+    if (guarded) return guarded.roles;
+  }
   if (ADMIN_API.some(p => path.startsWith(p)))    return ["ADMIN"];
   if (ADMIN_SECOPS_API.some(p => path.startsWith(p))) return ["ADMIN", "SECOPS"];
-  // SECOPS_API contains state-changing and SECOPS-tier read paths. CLIENT and
-  // AUDITOR are intentionally excluded here (they get read-only access via
-  // AUDITOR_API), matching lib/rbac.ts.
   if (SECOPS_API.some(p => path.startsWith(p)))   return ["ADMIN", "SECOPS", "SOC_LEAD", "DEVSECOPS", "RED_TEAMER", "FINOPS_ANALYST", "CLOUD_ENGINEER"];
+  if (AUDIT_EVENTS_API.some(p => path.startsWith(p))) return AUDIT_EVENTS_ROLES;
   if (AUDITOR_API.some(p => path.startsWith(p)))  return ["ADMIN", "SECOPS", "AUDITOR", "SOC_LEAD", "DEVSECOPS", "CLOUD_ENGINEER", "RED_TEAMER", "FINOPS_ANALYST", "CLIENT", "VIEWER"];
   if (AUTHENTICATED_API.some(p => path.startsWith(p))) return "any"; // authenticated, any role
   return "deny"; // Batch 2.1: fail closed — no policy matched
+}
+
+/**
+ * The full decision for a signed-in role: the route policy, and for DESIGNER
+ * its own allowlist on top (DESIGNER is never granted a route just because it
+ * is open to "any" role). middleware.ts enforces this; the edge and the Go API
+ * still decide independently.
+ */
+export function roleMayCallApi(role: string | null | undefined, path: string, method = "GET"): boolean {
+  const required = apiRequiredRoles(path, method);
+  if (required === "public") return true;
+  if (!role || required === "deny") return false;
+  if (role === "DESIGNER") {
+    const m = method.toUpperCase();
+    return DESIGNER_API.some(d => matches(path, d.prefix) && d.methods.includes(m));
+  }
+  if (required === "any") return true;
+  return (required as string[]).includes(role);
 }
